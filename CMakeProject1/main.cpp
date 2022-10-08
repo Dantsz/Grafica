@@ -4,14 +4,13 @@
 //
 //  Copyright © 2017 CGIS. All rights reserved.
 //
-
 #include <conio.h>
 #include <iostream>
 
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
 
-#include "GPSLab1.hpp"
+#include "GPSLab1.hpp" 
 
 void TestTransformPoint()
 {
@@ -57,7 +56,7 @@ void TestIsConvex()
 }
 
 void TestComputeNormals()
-{
+{   
 	glm::vec2 v1(0.0f, 0.0f);
 	glm::vec2 v2(2.0f, 0.0f);
 	glm::vec2 v3(2.0f, 2.0f);
