@@ -2,7 +2,9 @@
   "name": "my-application",
   "version": "0.15.2",
   "dependencies": [
-  "glm",
-  "glfw3"
+    "glm",
+    "glfw3",
+    "opengl",
+    "glew"
   ]
 } 

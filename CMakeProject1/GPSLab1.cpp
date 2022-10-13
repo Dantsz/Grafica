@@ -40,7 +40,7 @@ namespace gps {
         std::vector<glm::vec2> normalsList{};
         for (size_t i = 1 ; i < vertices.size() ; i++)
         {
-            normalsList.push_back(glm::cross(vertices[i - 1], vertices[i]));
+           
         }
         return normalsList;
     }
