@@ -1,51 +1,67 @@
-//
-//  main.cpp
-//  Lab1
-//
-//  Copyright © 2017 CGIS. All rights reserved.
-//
-#include <conio.h>
 #include <iostream>
-
-#include "glm/glm.hpp"
-#include "glm/ext.hpp"
-
-#include "GPSLab1.hpp" 
-
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
-int main(void)
+const int GL_WINDOW_WIDTH = 640;
+const int GL_WINDOW_HEIGHT = 480;
+
+GLFWwindow* glWindow = NULL;
+
+glm::vec4 clearColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+
+bool initOpenGLWindow()
 {
-    GLFWwindow* window;
+	if (!glfwInit()) {
+		fprintf(stderr, "ERROR: could not start GLFW3\n");
+		return false;
+	}
 
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
+	glWindow = glfwCreateWindow(GL_WINDOW_WIDTH, GL_WINDOW_HEIGHT, "Hello Window", NULL, NULL);
+	if (!glWindow) {
+		fprintf(stderr, "ERROR: could not open window with GLFW3\n");
+		glfwTerminate();
+		return false;
+	}
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
+	glfwMakeContextCurrent(glWindow);
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
+	// start GLEW extension handler
+	glewExperimental = GL_TRUE;
+	glewInit();
 
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+	// get version info
+	const GLubyte* renderer = glGetString(GL_RENDERER); // get renderer string
+	const GLubyte* version = glGetString(GL_VERSION); // version as a string
+	printf("Renderer: %s\n", renderer);
+	printf("OpenGL version supported %s\n", version);
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
+	return true;
+}
+void cleanup() {
+	glfwDestroyWindow(glWindow);
+	//close GL context and any other GLFW resources
+	glfwTerminate();
+}
 
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
+void renderScene() {
+	//TODO drawing code
+	glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
 
-    glfwTerminate();
-    return 0;
+int main(int argc, const char* argv[]) {
+
+	initOpenGLWindow();
+
+	while (!glfwWindowShouldClose(glWindow)) {
+
+		renderScene();
+
+		glfwSwapBuffers(glWindow);
+		glfwPollEvents();
+	}
+
+	cleanup();
+	return 0;
 }
