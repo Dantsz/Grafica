@@ -3,4 +3,17 @@
 ################################################################################
 
 /.vs
-/out/build/x64-debug
+/out/build/x64-debug/.cmake
+/out/build/x64-debug/CmakeFiles
+/out/build/x64-debug/Testing
+/out/build/x64-debug/vcpkg_installed
+/out/build/x64-debug/.ninja_deps
+/out/build/x64-debug/build.ninja
+/out/build/x64-debug/CMakeCache.txt
+/out/build/x64-debug/cmake_installed.cmake
+/out/build/x64-debug/vcpkg-manifest-install.log
+/out/build/x64-debug/.ninja_log
+/out/build/x64-debug/cmake_install.cmake
+
+/out/build/x64-debug/VSInheritEnvironments.txt
+/out/build/x64-debug/CMakeProject1/CMakeFiles/CMakeProject1.dir

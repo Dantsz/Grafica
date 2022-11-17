@@ -20,8 +20,8 @@
 #include "Model3D.hpp"
 
 
-int glWindowWidth = 800;
-int glWindowHeight = 600;
+int glWindowWidth = 1500;
+int glWindowHeight = 800;
 int retina_width, retina_height;
 GLFWwindow* glWindow = NULL;
 
@@ -29,33 +29,40 @@ gps::Model3D teapot;
 
 glm::mat4 model;
 GLuint modelLoc;
+GLuint modelLoc2;
 glm::mat4 view;
 GLuint viewLoc;
+GLuint viewLoc2;
 glm::mat4 projection;
 GLuint projectionLoc;
+GLuint projectionLoc2;
 glm::mat3 normalMatrix;
 GLuint normalMatrixLoc;
+GLuint normalMatrixLoc2;
 
 glm::vec3 lightDir;
 GLuint lightDirLoc;
+GLuint lightDirLoc2;
 glm::vec3 lightColor;
 GLuint lightColorLoc;
+GLuint lightColorLoc2;
 glm::vec3 baseColor(1.0f, 0.55f, 0.0f); //orange
 GLuint baseColorLoc;
+GLuint baseColorLoc2;
 glm::vec3 viewPos;
-GLuint viewPosLoc;
 
 gps::Camera myCamera(
-	glm::vec3(0.0f, 0.0f, 2.0f),
+	glm::vec3(0.0f, 0.0f, 3.0f),
 	glm::vec3(0.0f, 0.0f, -10.0f),
 	glm::vec3(0.0f, 1.0f, 0.0f)
 );
-GLfloat cameraSpeed = 0.01f;
+GLfloat cameraSpeed = 0.05f;
 
 bool pressedKeys[1024];
 GLfloat angleY;
 
 gps::Shader myCustomShader;
+gps::Shader myCustomShader2;
 
 GLenum glCheckError_(const char* file, int line)
 {
@@ -108,54 +115,94 @@ void processMovement()
 {
 	if (pressedKeys[GLFW_KEY_Q]) {
 		angleY -= 1.0f;
+
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(modelLoc2, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 	}
 
 	if (pressedKeys[GLFW_KEY_E]) {
 		angleY += 1.0f;
+
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(modelLoc2, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 	}
 
 	if (pressedKeys[GLFW_KEY_W]) {
 		myCamera.move(gps::MOVE_FORWARD, cameraSpeed);
+
 		view = myCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniform3fv(lightDirLoc2, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
 	}
 
 	if (pressedKeys[GLFW_KEY_S]) {
 		myCamera.move(gps::MOVE_BACKWARD, cameraSpeed);
+
 		view = myCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniform3fv(lightDirLoc2, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
 	}
 
 	if (pressedKeys[GLFW_KEY_A]) {
 		myCamera.move(gps::MOVE_LEFT, cameraSpeed);
+
 		view = myCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniform3fv(lightDirLoc2, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
 	}
 
 	if (pressedKeys[GLFW_KEY_D]) {
 		myCamera.move(gps::MOVE_RIGHT, cameraSpeed);
+
 		view = myCamera.getViewMatrix();
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+
+		myCustomShader.useShaderProgram();
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
+		myCustomShader2.useShaderProgram();
+		glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+		glUniform3fv(lightDirLoc2, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
 	}
 }
 
@@ -207,14 +254,14 @@ bool initOpenGLWindow()
 
 void initObjects()
 {
-	teapot.LoadModel("models/teapots/teapot10segU.obj");
+	teapot.LoadModel("models/teapots/teapot4segU.obj", "models/teapots/");
 }
 
 void initUniforms()
 {
 	myCustomShader.useShaderProgram();
 
-	model = glm::mat4(1.0f);
+	model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelLoc = glGetUniformLocation(myCustomShader.shaderProgram, "model");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -226,7 +273,7 @@ void initUniforms()
 	normalMatrixLoc = glGetUniformLocation(myCustomShader.shaderProgram, "normalMatrix");
 	glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
-	projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 30.0f);
+	projection = glm::perspective(glm::radians(45.0f), ((float)retina_width / (float)2) / (float)retina_height, 0.1f, 1000.0f);
 	projectionLoc = glGetUniformLocation(myCustomShader.shaderProgram, "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -242,11 +289,39 @@ void initUniforms()
 
 	baseColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "baseColor");
 	glUniform3fv(baseColorLoc, 1, glm::value_ptr(baseColor));
+
+	myCustomShader2.useShaderProgram();
+
+	modelLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "model");
+	glUniformMatrix4fv(modelLoc2, 1, GL_FALSE, glm::value_ptr(model));
+
+	viewLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "view");
+	glUniformMatrix4fv(viewLoc2, 1, GL_FALSE, glm::value_ptr(view));
+
+	normalMatrixLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "normalMatrix");
+	glUniformMatrix3fv(normalMatrixLoc2, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+	projectionLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "projection");
+	glUniformMatrix4fv(projectionLoc2, 1, GL_FALSE, glm::value_ptr(projection));
+
+	//set the light direction
+	lightDirLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "lightDir");
+	glUniform3fv(lightDirLoc2, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view)) * lightDir));
+
+	//set light color
+	lightColorLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "lightColor");
+	glUniform3fv(lightColorLoc2, 1, glm::value_ptr(lightColor));
+
+	baseColorLoc2 = glGetUniformLocation(myCustomShader2.shaderProgram, "baseColor");
+	glUniform3fv(baseColorLoc2, 1, glm::value_ptr(baseColor));
 }
 
-void initShaders() {
+void initShaders()
+{
 	myCustomShader.loadShader("shaders/shaderStart.vert", "shaders/shaderStart.frag");
 	myCustomShader.useShaderProgram();
+	myCustomShader2.loadShader("shaders/shaderPPL.vert", "shaders/shaderPPL.frag");
+	myCustomShader2.useShaderProgram();
 }
 
 void initOpenGLState()
@@ -266,7 +341,10 @@ void renderScene()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glViewport(0, 0, retina_width / 2, retina_height);
 	teapot.Draw(myCustomShader);
+	glViewport(retina_width / 2, 0, retina_width / 2, retina_height);
+	teapot.Draw(myCustomShader2);
 }
 
 void cleanup() {
@@ -278,11 +356,7 @@ void cleanup() {
 
 int main(int argc, const char* argv[]) {
 
-	if (!initOpenGLWindow()) {
-		glfwTerminate();
-		return 1;
-	}
-
+	initOpenGLWindow();
 	initOpenGLState();
 	initObjects();
 	initShaders();
