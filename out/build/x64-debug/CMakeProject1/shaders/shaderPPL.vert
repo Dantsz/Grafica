@@ -15,6 +15,8 @@ uniform vec3 lightColor;
 uniform vec3 baseColor;
 
 out vec3 color;
+out vec3 v_normal;
+out vec3 v_position;
 
 vec3 ambient;
 float ambientStrength = 0.2f;
@@ -22,37 +24,13 @@ vec3 diffuse;
 vec3 specular;
 float specularStrength = 0.5f;
 
-void computeLight()
-{
-	//compute eye space coordinates
-	vec4 vertPosEye = view * model * vec4(vPosition, 1.0f);
-	vec3 normalEye = normalize(normalMatrix * vNormal);
-	
-	//normalize light direction
-	vec3 lightDirN = normalize(lightDir);
-	
-	//compute view direction (in eye coordinates, the viewer is situated at the origin
-	vec3 viewDir = normalize(- vertPosEye.xyz);
-	
-	//compute ambient light
-	ambient = ambientStrength * lightColor;
-	
-	//compute diffuse light
-	diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
-	
-	//compute specular light
-	vec3 reflectDir = reflect(-lightDirN, normalEye);
-	float specCoeff = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
-	specular = specularStrength * specCoeff * lightColor;
-}
 
 void main()
 {	
-	
-	computeLight();
-	
-	//compute final vertex color
-	color = min((ambient + diffuse) * baseColor + specular, 1.0f);
+	v_normal = vNormal;
+	v_position = vPosition;
+	color = baseColor ;
+
 
 	gl_Position = projection * view * model * vec4(vPosition, 1.0f);
 } 
