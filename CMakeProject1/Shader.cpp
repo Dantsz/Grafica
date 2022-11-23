@@ -1,11 +1,3 @@
-//
-//  Shader.cpp
-//  Lab3
-//
-//  Created by CGIS on 05/10/2016.
-//  Copyright © 2016 CGIS. All rights reserved.
-//
-
 #include "Shader.hpp"
 
 namespace gps {
@@ -13,28 +5,28 @@ namespace gps {
     {
         std::ifstream shaderFile;
         std::string shaderString;
-        
+
         //open shader file
-        shaderFile.open(fileName);
-        
+        shaderFile.open(fileName.c_str());
+
         std::stringstream shaderStringStream;
-        
+
         //read shader content into stream
         shaderStringStream << shaderFile.rdbuf();
-        
+
         //close shader file
         shaderFile.close();
-        
+
         //convert stream into GLchar array
         shaderString = shaderStringStream.str();
         return shaderString;
     }
-    
+
     void Shader::shaderCompileLog(GLuint shaderId)
     {
         GLint success;
         GLchar infoLog[512];
-        
+
         //check compilation info
         glGetShaderiv(shaderId, GL_COMPILE_STATUS, &success);
         if(!success)
@@ -43,12 +35,12 @@ namespace gps {
             std::cout << "Shader compilation error\n" << infoLog << std::endl;
         }
     }
-    
+
     void Shader::shaderLinkLog(GLuint shaderProgramId)
     {
         GLint success;
         GLchar infoLog[512];
-        
+
         //check linking info
         glGetProgramiv(shaderProgramId, GL_LINK_STATUS, &success);
         if(!success) {
@@ -56,7 +48,7 @@ namespace gps {
             std::cout << "Shader linking error\n" << infoLog << std::endl;
         }
     }
-    
+
     void Shader::loadShader(std::string vertexShaderFileName, std::string fragmentShaderFileName)
     {
         //read, parse and compile the vertex shader
@@ -68,7 +60,7 @@ namespace gps {
         glCompileShader(vertexShader);
         //check compilation status
         shaderCompileLog(vertexShader);
-        
+
         //read, parse and compile the vertex shader
         std::string f = readShaderFile(fragmentShaderFileName);
         const GLchar* fragmentShaderString = f.c_str();
@@ -78,7 +70,7 @@ namespace gps {
         glCompileShader(fragmentShader);
         //check compilation status
         shaderCompileLog(fragmentShader);
-       
+
         //attach and link the shader programs
         this->shaderProgram = glCreateProgram();
         glAttachShader(this->shaderProgram, vertexShader);
@@ -89,7 +81,7 @@ namespace gps {
         //check linking info
         shaderLinkLog(this->shaderProgram);
     }
-    
+
     void Shader::useShaderProgram()
     {
         glUseProgram(this->shaderProgram);

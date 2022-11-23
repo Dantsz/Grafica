@@ -2,7 +2,7 @@
 #define Mesh_hpp
 
 #include <GL/glew.h>
-#include <glm/glm.hpp>
+#include "glm/glm.hpp"
 
 #include "Shader.hpp"
 
