@@ -78,7 +78,7 @@ namespace gps {
         glCompileShader(fragmentShader);
         //check compilation status
         shaderCompileLog(fragmentShader);
-       
+        
         //attach and link the shader programs
         this->shaderProgram = glCreateProgram();
         glAttachShader(this->shaderProgram, vertexShader);

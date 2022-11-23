@@ -9,23 +9,13 @@
 #ifndef Shader_hpp
 #define Shader_hpp
 
-
-#include <iostream>
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-//
-//  main.cpp
-//  OpenGL_Shader_Example_step1
-//
-//  Created by CGIS on 30/11/15.
-//  Copyright © 2015 CGIS. All rights reserved.
-//
 
-
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include <string>
 
 namespace gps {
