@@ -6,6 +6,7 @@ layout(location=2) in vec2 vTexCoords;
 
 out vec3 fNormal;
 out vec4 fPosEye;
+out vec2 fragTexCoords;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -18,4 +19,5 @@ void main()
 	fPosEye = view * model * vec4(vPosition, 1.0f);
 	fNormal = normalize(normalMatrix * vNormal);
 	gl_Position = projection * view * model * vec4(vPosition, 1.0f);
+	fragTexCoords = vTexCoords;
 }
