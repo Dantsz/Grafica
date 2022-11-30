@@ -40,6 +40,7 @@ namespace gps {
 
         //for RETINA display
         glfwGetFramebufferSize(window, &this->dimensions.width, &this->dimensions.height);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
     void Window::Delete() {

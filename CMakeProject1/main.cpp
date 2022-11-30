@@ -36,10 +36,7 @@ GLint lightDirLoc;
 GLint lightColorLoc;
 
 // camera
-gps::Camera myCamera(
-    glm::vec3(0.0f, 0.0f, 3.0f),
-    glm::vec3(0.0f, 0.0f, -10.0f),
-    glm::vec3(0.0f, 1.0f, 0.0f));
+gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 GLfloat cameraSpeed = 0.1f;
 
@@ -107,8 +104,31 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
+
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-    //TODO
+    static bool firstMouse = true;
+    static float lastX = myWindow.getWindowDimensions().width  / 2.0f;
+    static float lastY = myWindow.getWindowDimensions().height / 2.0f;
+
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xOffset = xpos - lastX;
+    float yOffset = ypos - lastY;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.01f;
+    xOffset *= sensitivity;
+    yOffset *= sensitivity;
+
+    myCamera.rotate(yOffset, xOffset);
+    view = myCamera.getViewMatrix();
+    myBasicShader.useShaderProgram();
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 }
 
 void processMovement() {
@@ -232,6 +252,7 @@ void initUniforms() {
 
 void renderTeapot(gps::Shader shader) {
     teapot.render(shader, view, modelLoc, normalMatrixLoc);
+    teapot2.render(shader, view, modelLoc, normalMatrixLoc);
 }
 
 void renderScene() {
@@ -267,6 +288,7 @@ int main(int argc, const char * argv[]) {
 	glCheckError();
 	// application loop
     glm::vec3 ps = { 0.0f,0.0f,0.0f };
+    glm::vec3 ps2 = { 1.0f,0.0f,1.0f };
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         processMovement();
 	    renderScene();
@@ -274,7 +296,9 @@ int main(int argc, const char * argv[]) {
 		glfwPollEvents();
 		glfwSwapBuffers(myWindow.getWindow());
         ps.x+=0.001;
+        ps2.x -= 0.001;
         teapot.setPosition(ps);
+        teapot2.setPosition(ps2);
 		glCheckError();
 	}
 
