@@ -53,7 +53,7 @@ GLfloat angle;
 gps::Shader myBasicShader;
 //teapot object
 Object teapot{ teapot_model };
-
+Object teapot2{ teapot_model };
 GLenum glCheckError_(const char *file, int line)
 {
 	GLenum errorCode;
@@ -119,7 +119,7 @@ void processMovement() {
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // compute normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_S]) {
@@ -129,7 +129,7 @@ void processMovement() {
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // compute normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_A]) {
@@ -139,7 +139,7 @@ void processMovement() {
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // compute normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_D]) {
@@ -149,7 +149,7 @@ void processMovement() {
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // compute normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
@@ -266,13 +266,15 @@ int main(int argc, const char * argv[]) {
 
 	glCheckError();
 	// application loop
+    glm::vec3 ps = { 0.0f,0.0f,0.0f };
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         processMovement();
 	    renderScene();
 
 		glfwPollEvents();
 		glfwSwapBuffers(myWindow.getWindow());
-
+        ps.x+=0.001;
+        teapot.setPosition(ps);
 		glCheckError();
 	}
 
