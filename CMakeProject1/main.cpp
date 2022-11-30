@@ -11,7 +11,7 @@
 #include "Shader.hpp"
 #include "Camera.hpp"
 #include "Model3D.hpp"
-
+#include "Object.h"
 #include <iostream>
 
 // window
@@ -46,11 +46,13 @@ GLfloat cameraSpeed = 0.1f;
 GLboolean pressedKeys[1024];
 
 // models
-gps::Model3D teapot;
+std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
 gps::Shader myBasicShader;
+//teapot object
+Object teapot{ teapot_model };
 
 GLenum glCheckError_(const char *file, int line)
 {
@@ -151,19 +153,11 @@ void processMovement() {
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
-        angle -= 1.0f;
-        // update model matrix for teapot
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0, 1, 0));
-        // update normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+        teapot.rotate(-1.0f);
     }
 
     if (pressedKeys[GLFW_KEY_E]) {
-        angle += 1.0f;
-        // update model matrix for teapot
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0, 1, 0));
-        // update normal matrix for teapot
-        normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+        teapot.rotate(1.0f);
     }
 }
 
@@ -189,7 +183,7 @@ void initOpenGLState() {
 }
 
 void initModels() {
-    teapot.LoadModel("models/teapot/teapot20segUT.obj");
+    teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
 }
 
 void initShaders() {
@@ -237,17 +231,7 @@ void initUniforms() {
 }
 
 void renderTeapot(gps::Shader shader) {
-    // select active shader program
-    shader.useShaderProgram();
-
-    //send teapot model matrix data to shader
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-    //send teapot normal matrix data to shader
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-    // draw teapot
-    teapot.Draw(shader);
+    teapot.render(shader, view, modelLoc, normalMatrixLoc);
 }
 
 void renderScene() {
