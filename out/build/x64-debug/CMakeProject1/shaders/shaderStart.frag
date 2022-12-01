@@ -28,7 +28,7 @@ void computeLightComponents()
 	
 	//transform normal
 	vec3 normalEye = normalize(fNormal);	
-	vec3 lightDirN = normalize(lightDir);
+	vec3 lightDirN = normalize(lightDir - fPosEye.xyz);
 	vec3 lightPosEye = lightDir;
 	//compute distance to light
 	float dist = length(lightPosEye - fPosEye.xyz);
