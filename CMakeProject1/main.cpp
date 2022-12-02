@@ -13,6 +13,12 @@
 #include "Model3D.hpp"
 #include "Object.h"
 #include <iostream>
+#include "imgui.h"
+
+#include "imgui_internal.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 
 // window
 gps::Window myWindow;
@@ -44,13 +50,14 @@ GLboolean pressedKeys[1024];
 
 // models
 std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
 gps::Shader myBasicShader;
 //teapot object
 Object teapot{ teapot_model };
-Object teapot2{ teapot_model };
+Object teapot2{ debris_model };
 GLenum glCheckError_(const char *file, int line)
 {
 	GLenum errorCode;
@@ -184,7 +191,14 @@ void processMovement() {
 void initOpenGLWindow() {
     myWindow.Create(1024, 768, "OpenGL Project Core");
 }
-
+void initImGuiContext(GLFWwindow* window)
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 410");
+}
 void setWindowCallbacks() {
 	glfwSetWindowSizeCallback(myWindow.getWindow(), windowResizeCallback);
     glfwSetKeyCallback(myWindow.getWindow(), keyboardCallback);
@@ -204,6 +218,7 @@ void initOpenGLState() {
 
 void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
+    debris_model->LoadModel("models/debris/debris.obj");
 }
 
 void initShaders() {
@@ -280,6 +295,8 @@ int main(int argc, const char * argv[]) {
     }
 
     initOpenGLState();
+    initImGuiContext(myWindow.getWindow());
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
 	initModels();
 	initShaders();
 	initUniforms();
@@ -290,9 +307,15 @@ int main(int argc, const char * argv[]) {
     glm::vec3 ps = { 0.0f,0.0f,0.0f };
     glm::vec3 ps2 = { 1.0f,0.0f,1.0f };
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
+        
         processMovement();
 	    renderScene();
-
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glfwPollEvents();
 		glfwSwapBuffers(myWindow.getWindow());
         ps.x+=0.001;
@@ -301,7 +324,9 @@ int main(int argc, const char * argv[]) {
         teapot2.setPosition(ps2);
 		glCheckError();
 	}
-
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 	cleanup();
 
     return EXIT_SUCCESS;

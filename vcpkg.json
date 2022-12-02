@@ -5,6 +5,15 @@
     "glm",
     "glfw3",
     "opengl",
-    "glew"
+    "glew",
+    {
+      "name": "imgui",
+      "features": [
+        "opengl3-binding",
+        "glfw-binding",
+        "glut-binding"
+      ]
+    }
+
   ]
 } 
