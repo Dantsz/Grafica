@@ -97,19 +97,6 @@ void windowResizeCallback(GLFWwindow* window, int width, int height) {
 	//TODO
 }
 
-void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mode) {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    }
-
-	if (key >= 0 && key < 1024) {
-        if (action == GLFW_PRESS) {
-            pressedKeys[key] = true;
-        } else if (action == GLFW_RELEASE) {
-            pressedKeys[key] = false;
-        }
-    }
-}
 
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -196,10 +183,35 @@ void initImGuiContext(GLFWwindow* window)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
+
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 410");
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 }
-void setWindowCallbacks() {
+void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mode) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    if (action == GLFW_PRESS)
+    {
+        if (key == GLFW_KEY_O)
+        {
+            static bool cursor = false;
+            myWindow.setEnableCursor(cursor, []() {}, []() {});
+            cursor = !cursor;
+        }
+    }
+    if (key >= 0 && key < 1024) {
+        if (action == GLFW_PRESS) {
+            pressedKeys[key] = true;
+        }
+        else if (action == GLFW_RELEASE) {
+            pressedKeys[key] = false;
+        }
+    }
+}
+void setWindowCallbacks() { 
 	glfwSetWindowSizeCallback(myWindow.getWindow(), windowResizeCallback);
     glfwSetKeyCallback(myWindow.getWindow(), keyboardCallback);
     glfwSetCursorPosCallback(myWindow.getWindow(), mouseCallback);
@@ -285,6 +297,7 @@ void cleanup() {
     //cleanup code for your own data
 }
 
+
 int main(int argc, const char * argv[]) {
 
     try {
@@ -295,33 +308,49 @@ int main(int argc, const char * argv[]) {
     }
 
     initOpenGLState();
+    setWindowCallbacks();
     initImGuiContext(myWindow.getWindow());
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+   
+
 	initModels();
 	initShaders();
 	initUniforms();
-    setWindowCallbacks();
+   
 
 	glCheckError();
 	// application loop
     glm::vec3 ps = { 0.0f,0.0f,0.0f };
     glm::vec3 ps2 = { 1.0f,0.0f,1.0f };
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
+        glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
-        
+        ImGui::Begin("Stats");
+            ImGui::Text("Position: (%f,%f,%f)", myCamera.cameraPosition.x, myCamera.cameraPosition.y, myCamera.cameraPosition.z);
+            ImGui::Text("Camera target: (%f,%f,%f)", myCamera.cameraTarget.x, myCamera.cameraTarget.y, myCamera.cameraTarget.z);
+            ImGui::Text("Front direction: (%f,%f,%f)", myCamera.cameraFrontDirection.x, myCamera.cameraFrontDirection.y, myCamera.cameraFrontDirection.z);
+            ImGui::Text("Right direction: (%f,%f,%f)", myCamera.cameraRightDirection.x, myCamera.cameraRightDirection.y, myCamera.cameraRightDirection.z);
+            ImGui::Text("UP direction: (%f,%f,%f)", myCamera.cameraUpDirection.x, myCamera.cameraUpDirection.y, myCamera.cameraUpDirection.z);
+            ImGui::Separator();
+
+        ImGui::End();
+
+
+
         processMovement();
-	    renderScene();
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glfwPollEvents();
-		glfwSwapBuffers(myWindow.getWindow());
-        ps.x+=0.001;
+        ps.x += 0.001;
         ps2.x -= 0.001;
         teapot.setPosition(ps);
         teapot2.setPosition(ps2);
+
+
+
+	    renderScene();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		
+		glfwSwapBuffers(myWindow.getWindow());
 		glCheckError();
 	}
     ImGui_ImplOpenGL3_Shutdown();

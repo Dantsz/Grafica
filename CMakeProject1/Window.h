@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <iostream>
+#include <functional>
 
 struct WindowDimensions {
     int width;
@@ -22,7 +23,7 @@ namespace gps {
         GLFWwindow* getWindow();
         WindowDimensions getWindowDimensions();
         void setWindowDimensions(WindowDimensions dimensions);
-
+        void setEnableCursor(bool cursor,std::function<void()> on_enabled,std::function<void()> on_disabled);
     private:
         WindowDimensions dimensions;
         GLFWwindow *window;

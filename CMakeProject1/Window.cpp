@@ -61,4 +61,17 @@ namespace gps {
     void Window::setWindowDimensions(WindowDimensions dimensions) {
         this->dimensions = dimensions;
     }
+    void Window::setEnableCursor(bool cursor, std::function<void()> on_enabled, std::function<void()> on_disabled)
+    {
+        if (cursor)
+        {       
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            on_enabled();
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            on_disabled();
+        }
+    }
 }
