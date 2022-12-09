@@ -22,7 +22,7 @@
 
 // window
 gps::Window myWindow;
-
+int retina_width, retina_height;
 // matrices
 glm::mat4 model;
 glm::mat4 view;
@@ -51,13 +51,25 @@ GLboolean pressedKeys[1024];
 // models
 std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
 gps::Shader myBasicShader;
+gps::Shader depthMapShader;
 //teapot object
 Object teapot{ teapot_model };
 Object teapot2{ debris_model };
+Object ground{ ground_model };
+bool cursor = false;
+float lightAngle = 0.0f;
+
+glm::mat4 lightMatrixTR;
+//generate FBO ID
+GLuint shadowMapFBO;
+GLuint depthMapTexture;
+const unsigned int SHADOW_WIDTH = 2048;
+const unsigned int SHADOW_HEIGHT = 2048;
 GLenum glCheckError_(const char *file, int line)
 {
 	GLenum errorCode;
@@ -97,7 +109,29 @@ void windowResizeCallback(GLFWwindow* window, int width, int height) {
 	//TODO
 }
 
+void initFBO() {
 
+    glGenFramebuffers(1, &shadowMapFBO);
+    //TODO - Create the FBO, the depth texture and attach the depth texture to the FBO
+    //create depth texture for FBO
+    glGenTextures(1, &depthMapTexture);
+    glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+        SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    // attach texture to FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTexture,
+        0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     static bool firstMouse = true;
@@ -118,11 +152,13 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     float sensitivity = 0.01f;
     xOffset *= sensitivity;
     yOffset *= sensitivity;
-
-    myCamera.rotate(yOffset, xOffset);
-    view = myCamera.getViewMatrix();
-    myBasicShader.useShaderProgram();
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    if (cursor)
+    {
+        myCamera.rotate(yOffset, xOffset);
+        view = myCamera.getViewMatrix();
+        myBasicShader.useShaderProgram();
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    }
 }
 
 void processMovement() {
@@ -197,7 +233,7 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     {
         if (key == GLFW_KEY_O)
         {
-            static bool cursor = false;
+            
             myWindow.setEnableCursor(cursor, []() {}, []() {});
             cursor = !cursor;
         }
@@ -231,29 +267,35 @@ void initOpenGLState() {
 void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
     debris_model->LoadModel("models/debris/debris.obj");
+    ground_model->LoadModel("models/ground/ground.obj");
 }
 
 void initShaders() {
 	myBasicShader.loadShader(
         "shaders/basic.vert",
         "shaders/basic.frag");
+    depthMapShader.loadShader("shaders/shadow.vert", "shaders/shadow.frag");
+  
+}
+glm::mat4 computeLightSpaceTrMatrix() {
+    //TODO - Return the light-space transformation matrix
+    glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir.x, lightDir.y, lightDir.z, 0.0f));
+    glm::mat4 lightView = glm::lookAt(ld, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    const GLfloat near_plane = 0.1f, far_plane = 5.0f;
+    glm::mat4 lightProjection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+    glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
+    return lightSpaceTrMatrix;
 }
 
 void initUniforms() {
 	myBasicShader.useShaderProgram();
 
-    // create model matrix for teapot
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelLoc = glGetUniformLocation(myBasicShader.shaderProgram, "model");
-
-	// get view matrix for current camera
-	view = myCamera.getViewMatrix();
 	viewLoc = glGetUniformLocation(myBasicShader.shaderProgram, "view");
 	// send view matrix to shader
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
     // compute normal matrix for teapot
-    normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
+    
 	normalMatrixLoc = glGetUniformLocation(myBasicShader.shaderProgram, "normalMatrix");
 
 	// create projection matrix
@@ -278,12 +320,52 @@ void initUniforms() {
 }
 
 void renderTeapot(gps::Shader shader) {
-    teapot.render(shader, view, modelLoc, normalMatrixLoc);
-    teapot2.render(shader, view, modelLoc, normalMatrixLoc);
+   
+    depthMapShader.useShaderProgram();
+    lightMatrixTR = computeLightSpaceTrMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(lightMatrixTR));
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    teapot.render(depthMapShader, view, true);
+    teapot2.render(depthMapShader, view, true);
+    ground.render(depthMapShader, view, true);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glViewport(0, 0, retina_width, retina_height);
+
+    
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    shader.useShaderProgram();
+
+    view = myCamera.getViewMatrix();
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+    const auto lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+    glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
+    //bind the shadow map
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+    glUniform1i(glGetUniformLocation(shader.shaderProgram, "shadowMap"), 3);
+
+    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "lightSpaceTrMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(lightMatrixTR));
+
+    teapot.render(shader, view);
+    teapot2.render(shader, view);
+    ground.render(shader, view);
 }
 
 void renderScene() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 
 	//render the scene
 
@@ -310,17 +392,20 @@ int main(int argc, const char * argv[]) {
     initOpenGLState();
     setWindowCallbacks();
     initImGuiContext(myWindow.getWindow());
-   
+  
 
 	initModels();
 	initShaders();
 	initUniforms();
-   
-
+    initFBO();
+    glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
 	glCheckError();
 	// application loop
-    glm::vec3 ps = { 0.0f,0.0f,0.0f };
-    glm::vec3 ps2 = { 1.0f,0.0f,1.0f };
+    glm::vec3 ps = { 0.0f,1.0f,0.0f };
+    glm::vec3 ps2 = { 0.0f,-100.0f,0.0f };
+    glm::vec3 ground_ps{ 0.0f,0.0f,0.0f };
+    ground.setPosition(ground_ps);
+   
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
@@ -333,7 +418,9 @@ int main(int argc, const char * argv[]) {
             ImGui::Text("Right direction: (%f,%f,%f)", myCamera.cameraRightDirection.x, myCamera.cameraRightDirection.y, myCamera.cameraRightDirection.z);
             ImGui::Text("UP direction: (%f,%f,%f)", myCamera.cameraUpDirection.x, myCamera.cameraUpDirection.y, myCamera.cameraUpDirection.z);
             ImGui::Separator();
-
+        ImGui::End();
+        ImGui::Begin("Global light");
+            ImGui::DragFloat3("Direction", glm::value_ptr(lightDir));
         ImGui::End();
 
 
@@ -345,13 +432,14 @@ int main(int argc, const char * argv[]) {
         teapot2.setPosition(ps2);
 
 
-
+  
 	    renderScene();
+              glCheckError();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		
+        glCheckError();
 		glfwSwapBuffers(myWindow.getWindow());
-		glCheckError();
+        glCheckError();
 	}
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

@@ -16,7 +16,7 @@ public:
 	{
 
 	}
-	void render(gps::Shader shader, const glm::mat4& view, GLint modelLoc, GLint normalLoc);
+	void render(gps::Shader shader, const glm::mat4& view,bool depth_pass = false);
 	
 	void setPosition(const glm::vec3& pos)
 	{
