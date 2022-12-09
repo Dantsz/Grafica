@@ -53,6 +53,8 @@ float computeShadow()
 	vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	// Transform to [0,1] range
 	normalizedCoords = normalizedCoords * 0.5 + 0.5;
+	if (normalizedCoords.z > 1.0f)
+		return 0.0f;
 	// Get closest depth value from light's perspective
 	float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
 	// Get depth of current fragment from light's perspective

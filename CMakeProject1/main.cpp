@@ -30,7 +30,7 @@ glm::mat3 normalMatrix;
 GLuint normalMatrixLoc;
 glm::mat4 lightRotation;
 
-glm::vec3 lightDir;
+glm::vec3 lightDir = glm::vec3(0.0f, 1.0f, 1.0f);;
 GLuint lightDirLoc;
 glm::vec3 lightColor;
 GLuint lightColorLoc;
@@ -243,7 +243,6 @@ void initUniforms() {
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 	//set the light direction (direction towards the light)
-	lightDir = glm::vec3(0.0f, 1.0f, 1.0f);
 	lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");	
 	glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
@@ -283,7 +282,8 @@ void initFBO() {
 
 glm::mat4 computeLightSpaceTrMatrix() {
 	//TODO - Return the light-space transformation matrix
-	glm::mat4 lightView = glm::lookAt(lightDir, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir.x,lightDir.y,lightDir.z,0.0f));
+	glm::mat4 lightView = glm::lookAt(ld, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	const GLfloat near_plane = 0.1f, far_plane = 5.0f;
 	glm::mat4 lightProjection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
 	glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
@@ -367,7 +367,6 @@ void renderScene() {
 				
 		lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
-
 		//bind the shadow map
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, depthMapTexture);
@@ -376,7 +375,7 @@ void renderScene() {
 		glUniformMatrix4fv(glGetUniformLocation(myCustomShader.shaderProgram, "lightSpaceTrMatrix"),
 			1,
 			GL_FALSE,
-			glm::value_ptr(computeLightSpaceTrMatrix()));
+			glm::value_ptr(lightMatrixTR));
 
 		drawObjects(myCustomShader, false);
 
