@@ -1,6 +1,6 @@
 #include "Object.h"
 
-void Object::render(gps::Shader shader, const glm::mat4& view, bool depth_pass)
+void Object::render(gps::Shader shader, const glm::mat4& view, bool depth_pass) const
 {
     shader.useShaderProgram();
 
@@ -10,7 +10,7 @@ void Object::render(gps::Shader shader, const glm::mat4& view, bool depth_pass)
     //send teapot normal matrix data to shader
     if (!depth_pass)
     {
-        normal_matrix = glm::inverseTranspose(view * model_mat);
+        const auto normal_matrix = glm::inverseTranspose(view * model_mat);
         glUniformMatrix3fv(glGetUniformLocation(shader.shaderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normal_matrix));
     }
 

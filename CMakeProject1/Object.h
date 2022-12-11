@@ -16,7 +16,7 @@ public:
 	{
 
 	}
-	void render(gps::Shader shader, const glm::mat4& view,bool depth_pass = false);
+	void render(gps::Shader shader, const glm::mat4& view,bool depth_pass = false) const;
 	
 	void setPosition(const glm::vec3& pos)
 	{
@@ -25,15 +25,14 @@ public:
 
 	}
 
-	void rotate(GLfloat added_angle)
+	void rotate(GLfloat added_angle, glm::vec3 axis)
 	{
 		angle += added_angle;
-		model_mat = glm::rotate(model_mat, glm::radians(added_angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		model_mat = glm::rotate(model_mat, glm::radians(added_angle),axis);
 	}
 
 	GLfloat angle;
 	glm::mat4 model_mat;
-	glm::mat3 normal_matrix;
 	std::shared_ptr<gps::Model3D> model;
 private:
 };

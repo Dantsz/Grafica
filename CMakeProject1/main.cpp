@@ -52,15 +52,13 @@ GLboolean pressedKeys[1024];
 std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
 gps::Shader myBasicShader;
 gps::Shader depthMapShader;
 //teapot object
-Object teapot{ teapot_model };
-Object teapot2{ debris_model };
-Object ground{ ground_model };
 bool cursor = false;
 float lightAngle = 0.0f;
 
@@ -70,6 +68,9 @@ GLuint shadowMapFBO;
 GLuint depthMapTexture;
 const unsigned int SHADOW_WIDTH = 2048;
 const unsigned int SHADOW_HEIGHT = 2048;
+
+std::vector<Object> objects{};
+
 GLenum glCheckError_(const char *file, int line)
 {
 	GLenum errorCode;
@@ -203,11 +204,11 @@ void processMovement() {
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
-        teapot.rotate(-1.0f);
+        objects[0].rotate(-1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     if (pressedKeys[GLFW_KEY_E]) {
-        teapot.rotate(1.0f);
+        objects[0].rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 }
 
@@ -268,6 +269,7 @@ void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
     debris_model->LoadModel("models/debris/debris.obj");
     ground_model->LoadModel("models/ground/ground.obj");
+    dust2_model->LoadModel("models/cluck/cluckinbell.obj");
 }
 
 void initShaders() {
@@ -301,7 +303,7 @@ void initUniforms() {
 	// create projection matrix
 	projection = glm::perspective(glm::radians(45.0f),
                                (float)myWindow.getWindowDimensions().width / (float)myWindow.getWindowDimensions().height,
-                               0.1f, 20.0f);
+                               0.1f, 2000.0f);
 	projectionLoc = glGetUniformLocation(myBasicShader.shaderProgram, "projection");
 	// send projection matrix to shader
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
@@ -331,9 +333,11 @@ void renderTeapot(gps::Shader shader) {
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 
     glClear(GL_DEPTH_BUFFER_BIT);
-    teapot.render(depthMapShader, view, true);
-    teapot2.render(depthMapShader, view, true);
-    ground.render(depthMapShader, view, true);
+    for( const auto & object : objects)
+    {
+        object.render(depthMapShader, view, true);
+    }
+    
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -358,10 +362,11 @@ void renderTeapot(gps::Shader shader) {
         1,
         GL_FALSE,
         glm::value_ptr(lightMatrixTR));
+    for (const auto& object : objects)
+    {
+        object.render(shader, view);
+    }
 
-    teapot.render(shader, view);
-    teapot2.render(shader, view);
-    ground.render(shader, view);
 }
 
 void renderScene() {
@@ -404,7 +409,12 @@ int main(int argc, const char * argv[]) {
     glm::vec3 ps = { 0.0f,1.0f,0.0f };
     glm::vec3 ps2 = { 0.0f,-100.0f,0.0f };
     glm::vec3 ground_ps{ 0.0f,0.0f,0.0f };
-    ground.setPosition(ground_ps);
+    objects.emplace_back(teapot_model);
+    objects.emplace_back(ground_model);
+    objects.emplace_back(debris_model);
+    objects.emplace_back(dust2_model);
+  // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
+    objects[1].setPosition(ground_ps);
    
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         glfwPollEvents();
@@ -428,8 +438,8 @@ int main(int argc, const char * argv[]) {
         processMovement();
         ps.x += 0.001;
         ps2.x -= 0.001;
-        teapot.setPosition(ps);
-        teapot2.setPosition(ps2);
+        objects[0].setPosition(ps);
+        objects[2].setPosition(ps2);
 
 
   
