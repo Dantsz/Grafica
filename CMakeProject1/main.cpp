@@ -59,7 +59,7 @@ GLfloat angle;
 gps::Shader myBasicShader;
 gps::Shader depthMapShader;
 //teapot object
-bool cursor = false;
+bool cursor = true;
 float lightAngle = 0.0f;
 
 glm::mat4 lightMatrixTR;
@@ -213,7 +213,7 @@ void processMovement() {
 }
 
 void initOpenGLWindow() {
-    myWindow.Create(1024, 768, "OpenGL Project Core");
+    myWindow.Create(1920, 768, "OpenGL Project Core");
 }
 void initImGuiContext(GLFWwindow* window)
 {
@@ -423,15 +423,17 @@ int main(int argc, const char * argv[]) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Stats");
-            ImGui::Text("Position: (%f,%f,%f)", myCamera.cameraPosition.x, myCamera.cameraPosition.y, myCamera.cameraPosition.z);
-            ImGui::Text("Camera target: (%f,%f,%f)", myCamera.cameraTarget.x, myCamera.cameraTarget.y, myCamera.cameraTarget.z);
-            ImGui::Text("Front direction: (%f,%f,%f)", myCamera.cameraFrontDirection.x, myCamera.cameraFrontDirection.y, myCamera.cameraFrontDirection.z);
-            ImGui::Text("Right direction: (%f,%f,%f)", myCamera.cameraRightDirection.x, myCamera.cameraRightDirection.y, myCamera.cameraRightDirection.z);
-            ImGui::Text("UP direction: (%f,%f,%f)", myCamera.cameraUpDirection.x, myCamera.cameraUpDirection.y, myCamera.cameraUpDirection.z);
+        
+            ImGui::InputFloat3("Position",   glm::value_ptr(myCamera.cameraPosition));
+            ImGui::InputFloat3("Camera target",    glm::value_ptr(myCamera.cameraTarget));
+            ImGui::InputFloat3("Front direction",  glm::value_ptr(myCamera.cameraFrontDirection));
+            ImGui::InputFloat3("Right direction",  glm::value_ptr(myCamera.cameraRightDirection));
+            ImGui::InputFloat3("UP direction",     glm::value_ptr(myCamera.cameraUpDirection));
             ImGui::Separator();
         ImGui::End();
         ImGui::Begin("Global light");
-            ImGui::DragFloat3("Direction", glm::value_ptr(lightDir));
+       
+            ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
         ImGui::End();
 
 
