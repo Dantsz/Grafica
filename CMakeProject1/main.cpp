@@ -269,7 +269,7 @@ void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
     debris_model->LoadModel("models/debris/debris.obj");
     ground_model->LoadModel("models/ground/ground.obj");
-    dust2_model->LoadModel("models/cluck/cluckinbell.obj");
+    dust2_model->LoadModel("models/cluck/untitled.obj");
 }
 
 void initShaders() {
@@ -413,6 +413,7 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(ground_model);
     objects.emplace_back(debris_model);
     objects.emplace_back(dust2_model);
+    objects[3].setPosition({0,-39,0});
   // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
     objects[1].setPosition(ground_ps);
    
