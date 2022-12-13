@@ -43,7 +43,7 @@ GLint lightColorLoc;
 
 // camera
 gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
+constexpr float render_distance = 2000.0f;
 GLfloat cameraSpeed = 0.1f;
 
 GLboolean pressedKeys[1024];
@@ -68,7 +68,9 @@ GLuint shadowMapFBO;
 GLuint depthMapTexture;
 const unsigned int SHADOW_WIDTH = 2048;
 const unsigned int SHADOW_HEIGHT = 2048;
-
+GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 5.0f;
+glm::vec3 lightEye{ 0.0f };
+glm::vec4 shadow_projection_coord = { -10.0f, 10.0f, -10.0f, 10.0f };
 std::vector<Object> objects{};
 
 GLenum glCheckError_(const char *file, int line)
@@ -282,9 +284,9 @@ void initShaders() {
 glm::mat4 computeLightSpaceTrMatrix() {
     //TODO - Return the light-space transformation matrix
     glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir.x, lightDir.y, lightDir.z, 0.0f));
-    glm::mat4 lightView = glm::lookAt(ld, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    const GLfloat near_plane = 0.1f, far_plane = 5.0f;
-    glm::mat4 lightProjection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+    glm::mat4 lightView = glm::lookAt(ld, lightEye, glm::vec3(0.0f, 1.0f, 0.0f));
+  
+    glm::mat4 lightProjection = glm::ortho(shadow_projection_coord[0], shadow_projection_coord[1], shadow_projection_coord[2], shadow_projection_coord[3], lightSpaceTrMatrix_near_plane, lightSpaceTrMatrix_far_plane);
     glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
     return lightSpaceTrMatrix;
 }
@@ -303,7 +305,7 @@ void initUniforms() {
 	// create projection matrix
 	projection = glm::perspective(glm::radians(45.0f),
                                (float)myWindow.getWindowDimensions().width / (float)myWindow.getWindowDimensions().height,
-                               0.1f, 2000.0f);
+                               0.1f, render_distance);
 	projectionLoc = glGetUniformLocation(myBasicShader.shaderProgram, "projection");
 	// send projection matrix to shader
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
@@ -321,8 +323,9 @@ void initUniforms() {
 	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
 }
 
-void renderTeapot(gps::Shader shader) {
-   
+
+void renderScene() {
+	
     depthMapShader.useShaderProgram();
     lightMatrixTR = computeLightSpaceTrMatrix();
     glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
@@ -333,20 +336,21 @@ void renderTeapot(gps::Shader shader) {
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 
     glClear(GL_DEPTH_BUFFER_BIT);
-    for( const auto & object : objects)
+    glCullFace(GL_FRONT);
+    for (const auto& object : objects)
     {
         object.render(depthMapShader, view, true);
     }
-    
+    glCullFace(GL_BACK);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glViewport(0, 0, retina_width, retina_height);
 
-    
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    shader.useShaderProgram();
+    myBasicShader.useShaderProgram();
 
     view = myCamera.getViewMatrix();
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -356,26 +360,16 @@ void renderTeapot(gps::Shader shader) {
     //bind the shadow map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-    glUniform1i(glGetUniformLocation(shader.shaderProgram, "shadowMap"), 3);
+    glUniform1i(glGetUniformLocation(myBasicShader.shaderProgram, "shadowMap"), 3);
 
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "lightSpaceTrMatrix"),
+    glUniformMatrix4fv(glGetUniformLocation(myBasicShader.shaderProgram, "lightSpaceTrMatrix"),
         1,
         GL_FALSE,
         glm::value_ptr(lightMatrixTR));
     for (const auto& object : objects)
     {
-        object.render(shader, view);
+        object.render(myBasicShader, view);
     }
-
-}
-
-void renderScene() {
-	
-
-	//render the scene
-
-	// render the teapot
-	renderTeapot(myBasicShader);
 
 }
 
@@ -434,6 +428,11 @@ int main(int argc, const char * argv[]) {
         ImGui::Begin("Global light");
        
             ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
+            ImGui::InputFloat("Angle", &lightAngle, 1.f);
+            ImGui::InputFloat3("Light Eye", glm::value_ptr(lightEye));
+            ImGui::InputFloat("Light Space Tr Matrix Near_plane", &lightSpaceTrMatrix_near_plane,0.05f);
+            ImGui::InputFloat("Light Space Tr Matrix Far_plane", &lightSpaceTrMatrix_far_plane, 0.05f);
+            ImGui::InputFloat4("shadow_projection_coord:", glm::value_ptr(shadow_projection_coord));
         ImGui::End();
 
 

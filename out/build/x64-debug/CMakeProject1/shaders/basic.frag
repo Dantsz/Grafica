@@ -70,9 +70,6 @@ void main()
 {
     computeDirLight();
 
-    //compute final vertex color
-    vec3 baseColor = vec3(0.9f, 0.35f, 0.0f);//orange
-	
 	ambient *= texture(diffuseTexture, fTexCoords).rgb;
 	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
 	specular *= texture(specularTexture, fTexCoords).rgb;
