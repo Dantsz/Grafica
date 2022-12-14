@@ -54,6 +54,7 @@ std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> nanosauit_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
@@ -265,6 +266,7 @@ void initModels() {
     debris_model->LoadModel("models/debris/debris.obj");
     ground_model->LoadModel("models/ground/ground.obj");
     dust2_model->LoadModel("models/cluck/untitled.obj");
+    nanosauit_model->LoadModel("models/nanosuit/nanosuit.obj");
 }
 
 void initShaders() {
@@ -400,6 +402,7 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(ground_model);
     objects.emplace_back(debris_model);
     objects.emplace_back(dust2_model);
+    objects.emplace_back(nanosauit_model);
     objects[3].setPosition({0,-39,0});
   // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
     objects[1].setPosition(ground_ps);

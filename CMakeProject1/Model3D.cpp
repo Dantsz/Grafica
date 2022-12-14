@@ -124,6 +124,7 @@ namespace gps {
 					if (!diffuseTexturePath.empty())
 					{
 						gps::Texture currentTexture;
+						std::cout << "Loading texture : " << basePath + diffuseTexturePath << '\n';
 						currentTexture = LoadTexture(basePath + diffuseTexturePath, "diffuseTexture");
 						textures.push_back(currentTexture);
 					}
