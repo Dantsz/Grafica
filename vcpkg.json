@@ -13,7 +13,8 @@
         "glfw-binding",
         "glut-binding"
       ]
-    }
+    },
+    "stb"
 
   ]
 } 
