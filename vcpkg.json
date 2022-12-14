@@ -14,7 +14,8 @@
         "glut-binding"
       ]
     },
-    "stb"
+    "stb",
+    "tinyobjloader"
 
   ]
 } 

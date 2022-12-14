@@ -3,7 +3,7 @@
 
 #include "Mesh.hpp"
 
-#include "tiny_obj_loader.h"
+
 
 
 #include <iostream>

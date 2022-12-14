@@ -1,6 +1,7 @@
 #include "Model3D.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "tiny_obj_loader.h"
 namespace gps {
 
 	void Model3D::LoadModel(std::string fileName)
@@ -31,7 +32,12 @@ namespace gps {
 		int materialId;
 
 		std::string err;
-		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fileName.c_str(), basePath.c_str(), GL_TRUE);
+		std::string warnings;
+		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warnings,&err, fileName.c_str(), basePath.c_str(), GL_TRUE);
+
+		if (!warnings.empty()) { // `err` may contain warning message.
+			std::cerr << warnings << std::endl;
+		}
 
 		if (!err.empty()) { // `err` may contain warning message.
 			std::cerr << err << std::endl;
