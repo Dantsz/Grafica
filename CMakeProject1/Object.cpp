@@ -13,7 +13,5 @@ void Object::render(gps::Shader shader, const glm::mat4& view, bool depth_pass) 
         const auto normal_matrix = glm::inverseTranspose(view * model_mat);
         glUniformMatrix3fv(glGetUniformLocation(shader.shaderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normal_matrix));
     }
-
-    // draw teapot
     model->Draw(shader);
 } 

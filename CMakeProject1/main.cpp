@@ -33,6 +33,7 @@ glm::mat3 normalMatrix;
 glm::vec3 lightDir;
 glm::vec3 lightColor;
 
+
 // shader uniform locations
 GLint modelLoc;
 GLint viewLoc;
@@ -171,8 +172,6 @@ void processMovement() {
         view = myCamera.getViewMatrix();
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        // compute normal matrix for teapot
-       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_S]) {
@@ -181,8 +180,6 @@ void processMovement() {
         view = myCamera.getViewMatrix();
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        // compute normal matrix for teapot
-       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_A]) {
@@ -191,8 +188,6 @@ void processMovement() {
         view = myCamera.getViewMatrix();
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        // compute normal matrix for teapot
-       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
 	if (pressedKeys[GLFW_KEY_D]) {
@@ -201,8 +196,6 @@ void processMovement() {
         view = myCamera.getViewMatrix();
         myBasicShader.useShaderProgram();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        // compute normal matrix for teapot
-       // normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
@@ -283,7 +276,7 @@ void initShaders() {
 }
 glm::mat4 computeLightSpaceTrMatrix() {
     //TODO - Return the light-space transformation matrix
-    glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir.x, lightDir.y, lightDir.z, 0.0f));
+    glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 0.0f));
     glm::mat4 lightView = glm::lookAt(ld, lightEye, glm::vec3(0.0f, 1.0f, 0.0f));
   
     glm::mat4 lightProjection = glm::ortho(shadow_projection_coord[0], shadow_projection_coord[1], shadow_projection_coord[2], shadow_projection_coord[3], lightSpaceTrMatrix_near_plane, lightSpaceTrMatrix_far_plane);
@@ -410,7 +403,7 @@ int main(int argc, const char * argv[]) {
     objects[3].setPosition({0,-39,0});
   // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
     objects[1].setPosition(ground_ps);
-   
+    objects[2].setPosition(ps2);
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
@@ -427,6 +420,7 @@ int main(int argc, const char * argv[]) {
         ImGui::End();
         ImGui::Begin("Global light");
        
+            
             ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
             ImGui::InputFloat("Angle", &lightAngle, 1.f);
             ImGui::InputFloat3("Light Eye", glm::value_ptr(lightEye));
@@ -434,14 +428,18 @@ int main(int argc, const char * argv[]) {
             ImGui::InputFloat("Light Space Tr Matrix Far_plane", &lightSpaceTrMatrix_far_plane, 0.05f);
             ImGui::InputFloat4("shadow_projection_coord:", glm::value_ptr(shadow_projection_coord));
         ImGui::End();
-
+        ImGui::Begin("Teapot position");
+            ImGui::InputFloat("x:",&ps.x,0.1f,1.0f);
+            ImGui::InputFloat("y:", &ps.y, 0.1f, 1.0f);
+            ImGui::InputFloat("z:", &ps.z, 0.1f, 1.0f);
+        ImGui::End();
 
 
         processMovement();
-        ps.x += 0.001;
-        ps2.x -= 0.001;
+      
+   
         objects[0].setPosition(ps);
-        objects[2].setPosition(ps2);
+        
 
 
   
