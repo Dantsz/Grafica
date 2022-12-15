@@ -28,7 +28,7 @@ int retina_width, retina_height;
 glm::mat4 model;
 glm::mat4 view;
 glm::mat4 projection;
-glm::mat3 normalMatrix;
+
 
 // light parameters
 glm::vec3 lightDir;
@@ -129,10 +129,8 @@ void initSkybox()
     faces.push_back("skybox/alps_ft.tga");
     mySkyBox.Load(faces);
     skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
-
 }
 void initFBO() {
-
     glGenFramebuffers(1, &shadowMapFBO);
     //TODO - Create the FBO, the depth texture and attach the depth texture to the FBO
     //create depth texture for FBO
@@ -349,7 +347,7 @@ void renderScene() {
 
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_FRONT);
-    for (const auto& object : objects)
+    for ( auto& object : objects)
     {
         object.render(depthMapShader, view, true);
     }
@@ -373,8 +371,6 @@ void renderScene() {
 
     mySkyBox.Draw(skyboxShader, view, projection);
 
-
-
     myBasicShader.useShaderProgram();
 
     view = myCamera.getViewMatrix();
@@ -391,7 +387,7 @@ void renderScene() {
         1,
         GL_FALSE,
         glm::value_ptr(lightMatrixTR));
-    for (const auto& object : objects)
+    for ( auto& object : objects)
     {
         object.render(myBasicShader, view);
     }
@@ -400,7 +396,6 @@ void renderScene() {
 
 void cleanup() {
     myWindow.Delete();
-    //cleanup code for your own data
 }
 
 
@@ -453,8 +448,6 @@ int main(int argc, const char * argv[]) {
             ImGui::Separator();
         ImGui::End();
         ImGui::Begin("Global light");
-       
-            
             ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
             ImGui::InputFloat("Angle", &lightAngle, 1.f);
             ImGui::InputFloat3("Light Eye", glm::value_ptr(lightEye));
@@ -473,8 +466,6 @@ int main(int argc, const char * argv[]) {
       
    
         objects[0].setPosition(ps);
-        
-
 
   
 	    renderScene();

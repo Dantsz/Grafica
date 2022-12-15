@@ -16,7 +16,7 @@ public:
 	{
 
 	}
-	void render(gps::Shader shader, const glm::mat4& view,bool depth_pass = false) const;
+	void render(gps::Shader& shader, const glm::mat4& view,bool depth_pass = false) ;
 	
 	void setPosition(const glm::vec3& pos)
 	{
@@ -33,6 +33,7 @@ public:
 
 	GLfloat angle;
 	glm::mat4 model_mat;
+	glm::mat3 normal_matrix;
 	std::shared_ptr<gps::Model3D> model;
 private:
 };
