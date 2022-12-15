@@ -11,6 +11,7 @@
 #include "Shader.hpp"
 #include "Camera.hpp"
 #include "Model3D.hpp"
+#include "SkyBox.hpp"
 #include "Object.h"
 #include <iostream>
 #include "imgui.h"
@@ -74,6 +75,10 @@ GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 5.0
 glm::vec3 lightEye{ 0.0f };
 glm::vec4 shadow_projection_coord = { -10.0f, 10.0f, -10.0f, 10.0f };
 std::vector<Object> objects{};
+//skybox
+std::vector<const GLchar*> faces;
+gps::SkyBox mySkyBox;
+gps::Shader skyboxShader;
 
 GLenum glCheckError_(const char *file, int line)
 {
@@ -113,7 +118,19 @@ void windowResizeCallback(GLFWwindow* window, int width, int height) {
 	fprintf(stdout, "Window resized! New width: %d , and height: %d\n", width, height);
 	//TODO
 }
+void initSkybox()
+{
+  
+    faces.push_back("skybox/alps_rt.tga");
+    faces.push_back("skybox/alps_lf.tga");
+    faces.push_back("skybox/alps_up.tga");
+    faces.push_back("skybox/alps_dn.tga");
+    faces.push_back("skybox/alps_bk.tga");
+    faces.push_back("skybox/alps_ft.tga");
+    mySkyBox.Load(faces);
+    skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
 
+}
 void initFBO() {
 
     glGenFramebuffers(1, &shadowMapFBO);
@@ -345,6 +362,19 @@ void renderScene() {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    skyboxShader.useShaderProgram();
+    view = myCamera.getViewMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "view"), 1, GL_FALSE,
+        glm::value_ptr(view));
+
+    projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "projection"), 1, GL_FALSE,
+        glm::value_ptr(projection));
+
+    mySkyBox.Draw(skyboxShader, view, projection);
+
+
+
     myBasicShader.useShaderProgram();
 
     view = myCamera.getViewMatrix();
@@ -392,6 +422,7 @@ int main(int argc, const char * argv[]) {
 	initShaders();
 	initUniforms();
     initFBO();
+    initSkybox();
     glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
 	glCheckError();
 	// application loop

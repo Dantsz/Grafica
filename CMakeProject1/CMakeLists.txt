@@ -8,6 +8,7 @@
     "Model3D.cpp"
     "Window.cpp""Window.h" 
     "Object.h" "Object.cpp"
+    "SkyBox.hpp""SkyBox.cpp"
    )
 find_package(glm CONFIG REQUIRED)
     target_link_libraries(CMakeProject1 PRIVATE glm::glm)
