@@ -9,7 +9,7 @@
 #include "Shader.hpp"
 #include "Model3D.hpp"
 #include "Camera.hpp"
-
+#include "SkyBox.hpp"
 #include <iostream>
 
 int glWindowWidth = 800;
@@ -61,7 +61,10 @@ bool showDepthMap;
 glm::mat4 lightMatrixTR;
 //generate FBO ID
 GLuint shadowMapFBO;
-
+//skybox
+gps::SkyBox mySkyBox;
+gps::Shader skyboxShader;
+std::vector<const GLchar*> faces;
 GLenum glCheckError_(const char *file, int line) {
 	GLenum errorCode;
 	while ((errorCode = glGetError()) != GL_NO_ERROR)
@@ -327,6 +330,10 @@ void renderScene() {
 	// render depth map on screen - toggled with the M key
 	// final scene rendering pass (with shadows)
 	//render the scene to the depth buffer
+	
+	
+	
+
 	depthMapShader.useShaderProgram();
 	lightMatrixTR = computeLightSpaceTrMatrix();
 	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
@@ -359,7 +366,15 @@ void renderScene() {
 		glViewport(0, 0, retina_width, retina_height);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		skyboxShader.useShaderProgram();
+		view = myCamera.getViewMatrix();
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "view"), 1, GL_FALSE,
+			glm::value_ptr(view));
 
+		projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
+		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "projection"), 1, GL_FALSE,
+			glm::value_ptr(projection));
+		mySkyBox.Draw(skyboxShader, view, projection);
 		myCustomShader.useShaderProgram();
 
 		view = myCamera.getViewMatrix();
@@ -418,6 +433,14 @@ int main(int argc, const char * argv[]) {
 	initUniforms();
 	initOpenGLState();
 
+	faces.push_back("skybox/right.tga");
+	faces.push_back("skybox/left.tga");
+	faces.push_back("skybox/top.tga");
+	faces.push_back("skybox/bottom.tga");
+	faces.push_back("skybox/back.tga");
+	faces.push_back("skybox/front.tga");
+	mySkyBox.Load(faces);
+	skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
 	glCheckError();
 
 	while (!glfwWindowShouldClose(glWindow)) {
