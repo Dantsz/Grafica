@@ -1,6 +1,6 @@
 #include "Camera.hpp"
 #include <glm/gtx/euler_angles.hpp>
-
+#include <iostream>
 namespace gps {
 
     //Camera constructor
@@ -57,7 +57,7 @@ namespace gps {
           cameraTarget = glm::vec4(cameraTarget,0.0f) * cameraPos;
           cameraFrontDirection = glm::vec4(cameraFrontDirection,.0f) * cameraPos;
           cameraRightDirection = glm::vec4(cameraRightDirection, .0f) * cameraPos;*/
-
+     
         auto cameraPos = glm::rotate(glm::mat4(1.0f), yaw, cameraUpDirection);
         cameraPos = glm::rotate(cameraPos, pitch, cameraRightDirection);
 
