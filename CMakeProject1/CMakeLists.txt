@@ -1,5 +1,5 @@
 ﻿    cmake_minimum_required (VERSION 3.8)
-    add_executable (CMakeProject1 "main.cpp" "GPSLab1.cpp""GPSLab1.hpp" "Shader.cpp""Shader.hpp" "Camera.cpp" "stb_image.cpp" "tiny_obj_loader.cpp" "Mesh.cpp" "Model3D.cpp""Skybox.cpp")
+    add_executable (CMakeProject1 "main.cpp" "GPSLab1.cpp""GPSLab1.hpp" "Shader.cpp""Shader.hpp" "Camera.cpp" "stb_image.cpp" "tiny_obj_loader.cpp" "Mesh.cpp" "Model3D.cpp""Skybox.cpp""Window.cpp" "Window.h")
 find_package(glm CONFIG REQUIRED)
     target_link_libraries(CMakeProject1 PRIVATE glm::glm)
 find_package(GLEW REQUIRED)
