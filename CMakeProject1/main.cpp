@@ -31,8 +31,9 @@ glm::mat4 projection;
 
 
 // light parameters
-glm::vec3 lightDir;
-glm::vec3 lightColor;
+glm::vec3 lightDir = {0.0f, 1.0f, 1.0f};
+glm::vec3 lightVec;
+glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
 
 
 // shader uniform locations
@@ -56,6 +57,7 @@ std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> nanosauit_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> sponza_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
 // shaders
@@ -282,6 +284,7 @@ void initModels() {
     ground_model->LoadModel("models/ground/ground.obj");
     dust2_model->LoadModel("models/cluck/untitled.obj");
     nanosauit_model->LoadModel("models/nanosuit/nanosuit.obj");
+    sponza_model->LoadModel("models/Sponza/sponza.obj");
 }
 
 void initShaders() {
@@ -321,13 +324,12 @@ void initUniforms() {
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
 
 	//set the light direction (direction towards the light)
-	lightDir = glm::vec3(0.0f, 1.0f, 1.0f);
 	lightDirLoc = glGetUniformLocation(myBasicShader.shaderProgram, "lightDir");
 	// send light dir to shader
-	glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+	
 
 	//set light color
-	lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
+	
 	lightColorLoc = glGetUniformLocation(myBasicShader.shaderProgram, "lightColor");
 	// send light color to shader
 	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
@@ -377,7 +379,9 @@ void renderScene() {
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
     const auto lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-    glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
+    lightVec = glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir;
+    glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightVec));
+
     //bind the shadow map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthMapTexture);
@@ -429,6 +433,8 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(debris_model);
     objects.emplace_back(dust2_model);
     objects.emplace_back(nanosauit_model);
+    objects.emplace_back(sponza_model);
+    objects[objects.size() - 1].set_scale({ 0.1f,0.1f,0.1f });
     objects[3].setPosition({0,-39,0});
   // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
     objects[1].setPosition(ground_ps);

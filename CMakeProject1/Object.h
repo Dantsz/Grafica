@@ -31,9 +31,16 @@ public:
 		model_mat = glm::rotate(model_mat, glm::radians(added_angle),axis);
 	}
 
+	void set_scale(glm::vec3 new_scale)
+	{
+		//TODO:
+		model_mat = glm::scale(model_mat,new_scale) ;
+	}
+
 	GLfloat angle;
 	glm::mat4 model_mat;
 	glm::mat3 normal_matrix;
 	std::shared_ptr<gps::Model3D> model;
+	float scale = 1.0f;
 private:
 };

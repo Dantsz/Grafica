@@ -62,7 +62,9 @@ namespace gps {
         cameraPos = glm::rotate(cameraPos, pitch, cameraRightDirection);
 
         cameraTarget = glm::vec4(cameraTarget, 0.0f) * cameraPos;
-        cameraFrontDirection = glm::normalize(cameraTarget - cameraPosition);
-        cameraRightDirection = glm::rotate(glm::radians(360.0f - 90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(glm::normalize(cameraTarget - cameraPosition), 0.0f);
+        const auto view_dir = cameraTarget - cameraPosition;
+        const auto normalized_dir = glm::normalize(view_dir);
+        cameraFrontDirection = normalized_dir;
+        cameraRightDirection = glm::rotate(glm::radians(360.0f - 90.0f), cameraUpDirection) * glm::vec4(normalized_dir, 0.0f);
     }
 }
