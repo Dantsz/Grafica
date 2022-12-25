@@ -72,9 +72,9 @@ GLuint shadowMapFBO;
 GLuint depthMapTexture;
 const unsigned int SHADOW_WIDTH = 2048;
 const unsigned int SHADOW_HEIGHT = 2048;
-GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 5.0f;
+GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 100.0f;
 glm::vec3 lightEye{ 0.0f };
-glm::vec4 shadow_projection_coord = { -10.0f, 10.0f, -10.0f, 10.0f };
+glm::vec4 shadow_projection_coord = { -100.0f, 100.0f, -100.0f, 100.0f };
 std::vector<Object> objects{};
 //skybox
 std::vector<const GLchar*> faces;
@@ -473,8 +473,19 @@ int main(int argc, const char * argv[]) {
             if (ImGui::Button("Normal")) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
+        } 
+        if (ImGui::CollapsingHeader("Blending"))
+        {
+            if (ImGui::Button("Enable"))
+            {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            }
+            if (ImGui::Button("Disable"))
+            {
+                glDisable(GL_BLEND);
+            }
         }
-         
         ImGui::End();
 
         processMovement();
@@ -484,7 +495,7 @@ int main(int argc, const char * argv[]) {
 
   
 	    renderScene();
-              glCheckError();
+        glCheckError();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glCheckError();
