@@ -56,7 +56,7 @@ std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
-std::shared_ptr<gps::Model3D> nanosauit_model = std::make_shared<gps::Model3D>();
+//std::shared_ptr<gps::Model3D> nanosauit_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> sponza_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
@@ -283,7 +283,7 @@ void initModels() {
     debris_model->LoadModel("models/debris/debris.obj");
     ground_model->LoadModel("models/ground/ground.obj");
     dust2_model->LoadModel("models/cluck/untitled.obj");
-    nanosauit_model->LoadModel("models/nanosuit/nanosuit.obj");
+    //nanosauit_model->LoadModel("models/nanosuit/nanosuit.obj");
     sponza_model->LoadModel("models/Sponza/sponza.obj");
 }
 
@@ -432,7 +432,7 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(ground_model);
     objects.emplace_back(debris_model);
     objects.emplace_back(dust2_model);
-    objects.emplace_back(nanosauit_model);
+    objects.emplace_back(teapot_model);
     objects.emplace_back(sponza_model);
     objects[objects.size() - 1].set_scale({ 0.1f,0.1f,0.1f });
     objects[3].setPosition({0,-39,0});

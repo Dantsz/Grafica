@@ -76,6 +76,10 @@ void main()
 	float shadow = computeShadow();
 	vec3 color = min((ambient + (1.0f - shadow)*diffuse) + (1.0f - shadow)*specular, 1.0f);
 	
-    
+
+	vec4 colorFromTexture = texture(diffuseTexture, fTexCoords);
+	if(colorFromTexture.a < 0.1)
+	discard;
+
     fColor = vec4(color, 1.0f);
 }
