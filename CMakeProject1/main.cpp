@@ -56,7 +56,6 @@ std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
-//std::shared_ptr<gps::Model3D> nanosauit_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> sponza_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
@@ -275,7 +274,7 @@ void initOpenGLState() {
 	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
 	glEnable(GL_CULL_FACE); // cull face
 	glCullFace(GL_BACK); // cull back face
-	glFrontFace(GL_CCW); // GL_CCW for counter clock-wise
+	glFrontFace(GL_CCW); // GL_CCW for counter clock-wise   
 }
 
 void initModels() {
@@ -283,7 +282,6 @@ void initModels() {
     debris_model->LoadModel("models/debris/debris.obj");
     ground_model->LoadModel("models/ground/ground.obj");
     dust2_model->LoadModel("models/cluck/untitled.obj");
-    //nanosauit_model->LoadModel("models/nanosuit/nanosuit.obj");
     sponza_model->LoadModel("models/Sponza/sponza.obj");
 }
 
@@ -337,7 +335,7 @@ void initUniforms() {
 
 
 void renderScene() {
-	
+	//SHADOW
     depthMapShader.useShaderProgram();
     lightMatrixTR = computeLightSpaceTrMatrix();
     glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
@@ -357,8 +355,8 @@ void renderScene() {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    //SKYBOX
     glViewport(0, 0, retina_width, retina_height);
-
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -373,6 +371,7 @@ void renderScene() {
 
     mySkyBox.Draw(skyboxShader, view, projection);
 
+    //NORMAL
     myBasicShader.useShaderProgram();
 
     view = myCamera.getViewMatrix();
@@ -436,7 +435,7 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(sponza_model);
     objects[objects.size() - 1].set_scale({ 0.1f,0.1f,0.1f });
     objects[3].setPosition({0,-39,0});
-  // objects[3].rotate(-90,glm::vec3(1.0f, 0.0f, 0.0f));
+  
     objects[1].setPosition(ground_ps);
     objects[2].setPosition(ps2);
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
@@ -445,7 +444,6 @@ int main(int argc, const char * argv[]) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGui::Begin("Stats");
-        
             ImGui::InputFloat3("Position",   glm::value_ptr(myCamera.cameraPosition));
             ImGui::InputFloat3("Camera target",    glm::value_ptr(myCamera.cameraTarget));
             ImGui::InputFloat3("Front direction",  glm::value_ptr(myCamera.cameraFrontDirection));
@@ -466,7 +464,18 @@ int main(int argc, const char * argv[]) {
             ImGui::InputFloat("y:", &ps.y, 0.1f, 1.0f);
             ImGui::InputFloat("z:", &ps.z, 0.1f, 1.0f);
         ImGui::End();
-
+        ImGui::Begin("Rendering");
+        if (ImGui::CollapsingHeader("Polygon Mode"))
+        {
+            if (ImGui::Button("WireFrame")) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            }
+            if (ImGui::Button("Normal")) {
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            }
+        }
+         
+        ImGui::End();
 
         processMovement();
       
