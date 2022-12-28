@@ -69,17 +69,17 @@ float computeShadow()
 void main() 
 {
     computeDirLight();
-
+	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
 	ambient *= texture(diffuseTexture, fTexCoords).rgb;
 	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
 	specular *= texture(specularTexture, fTexCoords).rgb;
 	float shadow = computeShadow();
-	vec3 color = min((ambient + (1.0f - shadow)*diffuse) + (1.0f - shadow)*specular, 1.0f);
+	vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color; 
 	
 
 	vec4 colorFromTexture = texture(diffuseTexture, fTexCoords);
 	if(colorFromTexture.a < 0.1)
 	discard;
 
-    fColor = vec4(color, 1.0f);
+    fColor = vec4(lighting, 1.0f);
 }
