@@ -121,7 +121,6 @@ void windowResizeCallback(GLFWwindow* window, int width, int height) {
 }
 void initSkybox()
 {
-  
     faces.push_back("skybox/alps_rt.tga");
     faces.push_back("skybox/alps_lf.tga");
     faces.push_back("skybox/alps_up.tga");
@@ -173,46 +172,28 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
     float sensitivity = 0.01f;
     xOffset *= sensitivity;
     yOffset *= sensitivity;
+    
     if (cursor)
     {
-        myCamera.rotate(yOffset, xOffset);
-        view = myCamera.getViewMatrix();
-        myBasicShader.useShaderProgram();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        myCamera.rotate(yOffset, xOffset);        
     }
 }
 
 void processMovement() {
 	if (pressedKeys[GLFW_KEY_W]) {
 		myCamera.move(gps::MOVE_FORWARD, cameraSpeed);
-		//update view matrix
-        view = myCamera.getViewMatrix();
-        myBasicShader.useShaderProgram();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	}
 
 	if (pressedKeys[GLFW_KEY_S]) {
 		myCamera.move(gps::MOVE_BACKWARD, cameraSpeed);
-        //update view matrix
-        view = myCamera.getViewMatrix();
-        myBasicShader.useShaderProgram();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	}
 
 	if (pressedKeys[GLFW_KEY_A]) {
 		myCamera.move(gps::MOVE_LEFT, cameraSpeed);
-        //update view matrix
-        view = myCamera.getViewMatrix();
-        myBasicShader.useShaderProgram();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	}
 
 	if (pressedKeys[GLFW_KEY_D]) {
 		myCamera.move(gps::MOVE_RIGHT, cameraSpeed);
-        //update view matrix
-        view = myCamera.getViewMatrix();
-        myBasicShader.useShaderProgram();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
@@ -235,7 +216,7 @@ void initImGuiContext(GLFWwindow* window)
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 410");
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 }
 void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int mode) {
@@ -289,8 +270,7 @@ void initShaders() {
 	myBasicShader.loadShader(
         "shaders/basic.vert",
         "shaders/basic.frag");
-    depthMapShader.loadShader("shaders/shadow.vert", "shaders/shadow.frag");
-  
+    depthMapShader.loadShader ("shaders/shadow.vert", "shaders/shadow.frag");
 }
 glm::mat4 computeLightSpaceTrMatrix() {
     //TODO - Return the light-space transformation matrix
