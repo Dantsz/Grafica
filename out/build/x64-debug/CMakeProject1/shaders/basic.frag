@@ -4,7 +4,6 @@ in vec3 fPosition;
 in vec3 fNormal;
 in vec2 fTexCoords;
 in vec4 fragPosLightSpace;
-
 out vec4 fColor;
 
 //matrices
@@ -19,15 +18,32 @@ uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
 uniform sampler2D shadowMap;
 //components
-vec3 ambient;
-float ambientStrength = 0.2f;
-vec3 diffuse;
-vec3 specular;
-float specularStrength = 0.5f;
-float shininess = 32.0f;
 
-void computeDirLight()
+float computeShadow()
+{	
+	// perform perspective divide
+	vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	// Transform to [0,1] range
+	normalizedCoords = normalizedCoords * 0.5 + 0.5;
+	if (normalizedCoords.z > 1.0f)
+		return 0.0f;
+	// Get closest depth value from light's perspective
+	float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
+	// Get depth of current fragment from light's perspective
+	float currentDepth = normalizedCoords.z;
+	// Check whether current frag pos is in shadow
+	float bias = max(0.05f * (1.0f - dot(fNormal, lightDir)), 0.005f);
+	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
+	return shadow;
+}
+vec3 computeDirLight()
 {
+	float ambientStrength = 0.2f;
+	float specularStrength = 0.5f;
+	float shininess = 32.0f;
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
     //compute eye space coordinates
     vec4 fPosEye = view * model * vec4(fPosition, 1.0f);
     vec3 normalEye = normalize(normalMatrix * fNormal);
@@ -48,38 +64,25 @@ void computeDirLight()
     vec3 reflectDir = reflect(-lightDirN, normalEye);
     float specCoeff = pow(max(dot(viewDir, reflectDir), 0.0f), 32);
     specular = specularStrength * specCoeff * lightColor;
-}
-float computeShadow()
-{	
-	// perform perspective divide
-	vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-	// Transform to [0,1] range
-	normalizedCoords = normalizedCoords * 0.5 + 0.5;
-	if (normalizedCoords.z > 1.0f)
-		return 0.0f;
-	// Get closest depth value from light's perspective
-	float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
-	// Get depth of current fragment from light's perspective
-	float currentDepth = normalizedCoords.z;
-	// Check whether current frag pos is in shadow
-	float bias = max(0.05f * (1.0f - dot(fNormal, lightDir)), 0.005f);
-	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
-	return shadow;
-}
-void main() 
-{
-    computeDirLight();
-	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
 	ambient *= texture(diffuseTexture, fTexCoords).rgb;
 	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
 	specular *= texture(specularTexture, fTexCoords).rgb;
 	float shadow = computeShadow();
-	vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color; 
+	vec3 directional = (ambient + (1.0 - shadow) * (diffuse + specular));
+	return directional;
+}
+
+void main() 
+{
+    computeDirLight();
+	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
+
+	vec3 lighting = computeDirLight() ;
 	
 
 	vec4 colorFromTexture = texture(diffuseTexture, fTexCoords);
 	if(colorFromTexture.a < 0.1)
 	discard;
 
-    fColor = vec4(lighting, 1.0f);
+    fColor = vec4(lighting *  color, 1.0f);
 }
