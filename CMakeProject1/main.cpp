@@ -32,7 +32,7 @@ glm::mat4 projection;
 
 // light parameters
 glm::vec3 lightDir = {0.0f, 1.0f, 1.0f};
-glm::vec3 lightVec;
+
 glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
 
 
@@ -55,7 +55,7 @@ GLboolean pressedKeys[1024];
 std::shared_ptr<gps::Model3D> teapot_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> debris_model = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> ground_model = std::make_shared<gps::Model3D>();
-std::shared_ptr<gps::Model3D> dust2_model = std::make_shared<gps::Model3D>();
+std::shared_ptr<gps::Model3D> dust2_model  = std::make_shared<gps::Model3D>();
 std::shared_ptr<gps::Model3D> sponza_model = std::make_shared<gps::Model3D>();
 GLfloat angle;
 
@@ -317,11 +317,9 @@ void initUniforms() {
 void renderScene() {
 	//SHADOW
     depthMapShader.useShaderProgram();
-    lightMatrixTR = computeLightSpaceTrMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(lightMatrixTR));
+    lightMatrixTR = computeLightSpaceTrMatrix();  
+    depthMapShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
+
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 
@@ -342,34 +340,26 @@ void renderScene() {
 
     skyboxShader.useShaderProgram();
     view = myCamera.getViewMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "view"), 1, GL_FALSE,
-        glm::value_ptr(view));
-
     projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
-    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.shaderProgram, "projection"), 1, GL_FALSE,
-        glm::value_ptr(projection));
-
     mySkyBox.Draw(skyboxShader, view, projection);
 
     //NORMAL
     myBasicShader.useShaderProgram();
 
     view = myCamera.getViewMatrix();
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    myBasicShader.setMat4("view", view);
 
     const auto lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-    lightVec = glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir;
-    glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightVec));
-
+    static glm::vec3 lightVec{};
+    lightVec = glm::inverseTranspose(glm::mat3(lightRotation)) * lightDir;
+    myBasicShader.setVec3("lightDir", lightVec);
     //bind the shadow map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthMapTexture);
     glUniform1i(glGetUniformLocation(myBasicShader.shaderProgram, "shadowMap"), 3);
 
-    glUniformMatrix4fv(glGetUniformLocation(myBasicShader.shaderProgram, "lightSpaceTrMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(lightMatrixTR));
+
+    myBasicShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
     for ( auto& object : objects)
     {
         object.render(myBasicShader, view);
@@ -405,19 +395,13 @@ int main(int argc, const char * argv[]) {
 	glCheckError();
 	// application loop
     glm::vec3 ps = { 0.0f,1.0f,0.0f };
-    glm::vec3 ps2 = { 0.0f,-100.0f,0.0f };
-    glm::vec3 ground_ps{ 0.0f,0.0f,0.0f };
+
+
     objects.emplace_back(teapot_model);
-    objects.emplace_back(ground_model);
-    objects.emplace_back(debris_model);
-    objects.emplace_back(dust2_model);
     objects.emplace_back(teapot_model);
     objects.emplace_back(sponza_model);
     objects[objects.size() - 1].set_scale({ 0.1f,0.1f,0.1f });
-    objects[3].setPosition({0,-39,0});
-  
-    objects[1].setPosition(ground_ps);
-    objects[2].setPosition(ps2);
+
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();

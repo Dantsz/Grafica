@@ -2,8 +2,6 @@
 
 void Object::render(gps::Shader& shader, const glm::mat4& view, bool depth_pass)
 {
-    shader.useShaderProgram();
-
     //send teapot model matrix data to shader
     glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model_mat));
 
