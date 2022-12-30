@@ -43,6 +43,10 @@ public:
     {
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);      
     }
+    void setFloat(const std::string& name, const float& flt)
+    {
+        glUniform1f(glGetUniformLocation(shaderProgram, name.c_str()), flt);
+    }
    
 private:
     std::string readShaderFile(std::string fileName);

@@ -33,7 +33,7 @@ glm::mat4 projection;
 // light parameters
 glm::vec3 lightDir = {0.0f, 1.0f, 1.0f};
 
-glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
+glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 
 
 // shader uniform locations
@@ -67,6 +67,7 @@ bool cursor = true;
 float lightAngle = 0.0f;
 
 glm::mat4 lightMatrixTR;
+glm::mat3 normalMatrix;
 //generate FBO ID
 GLuint shadowMapFBO;
 GLuint depthMapTexture;
@@ -80,6 +81,19 @@ std::vector<Object> objects{};
 std::vector<const GLchar*> faces;
 gps::SkyBox mySkyBox;
 gps::Shader skyboxShader;
+//point light
+glm::vec3 pointLightPositions[] = {
+    glm::vec3(10.257f,  0,  -42.05f),
+    glm::vec3(126.257f,  18.0f,  -6.05f),
+    glm::vec3(112.0f,  11.41f,  40.0f),
+    glm::vec3(13.0,  0,  -42.05f)
+};
+glm::vec3 pointLightColor[] = {
+    glm::vec3(1.f,  0,  1.f),
+    glm::vec3(0.0f,  0,  1.0f),
+    glm::vec3(0.0f,  1.0,  0.f),
+    glm::vec3(1.0,  1.0f,  0.0f)
+};
 
 GLenum glCheckError_(const char *file, int line)
 {
@@ -358,8 +372,47 @@ void renderScene() {
     glBindTexture(GL_TEXTURE_2D, depthMapTexture);
     glUniform1i(glGetUniformLocation(myBasicShader.shaderProgram, "shadowMap"), 3);
 
-
+    myBasicShader.setVec3("viewPos", myCamera.cameraPosition);
     myBasicShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
+    // point light 1
+    myBasicShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+    myBasicShader.setVec3("pointLights[0].color", pointLightColor[0]);
+    myBasicShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+    myBasicShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+    myBasicShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setFloat("pointLights[0].constant", 1.0f);
+    myBasicShader.setFloat("pointLights[0].linear", 0.09f);
+    myBasicShader.setFloat("pointLights[0].quadratic", 0.032f);
+    // point light 2
+    myBasicShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+    myBasicShader.setVec3("pointLights[1].color", pointLightColor[1]);
+    myBasicShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+    myBasicShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+    myBasicShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setFloat("pointLights[1].constant", 1.0f);
+    myBasicShader.setFloat("pointLights[1].linear", 0.09f);
+    myBasicShader.setFloat("pointLights[1].quadratic", 0.032f);
+    // point light 3
+    myBasicShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+    myBasicShader.setVec3("pointLights[2].color", pointLightColor[2]);
+    myBasicShader.setVec3("pointLights[2].ambient", 50.f, 50.f, 50.f);
+    myBasicShader.setVec3("pointLights[2].diffuse", 80.0f, 80.0f, 80.0f);
+    myBasicShader.setVec3("pointLights[2].specular", 10000.0f, 10000.0f, 10000.0f);
+    myBasicShader.setFloat("pointLights[2].constant", .5f);
+    myBasicShader.setFloat("pointLights[2].linear", 0.09f);
+    myBasicShader.setFloat("pointLights[2].quadratic", 0.032f);
+    // point light 4
+    myBasicShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+    myBasicShader.setVec3("pointLights[3].color", pointLightColor[3]);
+    myBasicShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+    myBasicShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+    myBasicShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setFloat("pointLights[3].constant", 1.0f);
+    myBasicShader.setFloat("pointLights[3].linear", 0.09f);
+    myBasicShader.setFloat("pointLights[3].quadratic", 0.032f);
+
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    myBasicShader.setMat3("normalMatrix",normalMatrix);
     for ( auto& object : objects)
     {
         object.render(myBasicShader, view);
