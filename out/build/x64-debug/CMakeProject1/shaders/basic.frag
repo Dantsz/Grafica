@@ -12,7 +12,7 @@ uniform vec3 viewPos;
 uniform mat4 view;
 uniform mat4 model;
 uniform mat3 normalMatrix;
-vec4 fPosEye = view * model * vec4(fPosition, 1.0f);
+
 
 //lighting
 uniform vec3 lightDir;
@@ -38,7 +38,7 @@ struct PointLight {
 #define NR_POINT_LIGHTS 4 
 uniform PointLight pointLights[4];
 
-float computeShadow()
+float computeShadow(vec3 normal)
 {	
 	// perform perspective divide
 	vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -51,7 +51,7 @@ float computeShadow()
 	// Get depth of current fragment from light's perspective
 	float currentDepth = normalizedCoords.z;
 	// Check whether current frag pos is in shadow
-	float bias = max(0.05f * (1.0f - dot(fNormal, lightDir)), 0.005f);
+	float bias = max(0.05f * (1.0f - dot(normal, lightDir)), 0.005f);
 	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
 	return shadow;
 }
@@ -66,17 +66,11 @@ vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
 
 
     //normalize light direction
-    vec3 lightDirN = vec3(normalize(view * vec4(lightDir, 0.0f)));
-
-    //compute view direction (in eye coordinates, the viewer is situated at the origin
-   
-
+    vec3 lightDirN = normalize(lightDir);
     //compute ambient light
     ambient = ambientStrength * lightColor;
-
     //compute diffuse light
     diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
-
     //compute specular light
     vec3 reflectDir = reflect(-lightDirN, normalEye);
     float specCoeff = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);
@@ -84,21 +78,22 @@ vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
 	ambient *= texture(diffuseTexture, fTexCoords).rgb;
 	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
 	specular *= texture(specularTexture, fTexCoords).rgb;
-	float shadow = computeShadow();
+	float shadow = computeShadow(normalEye);
 	vec3 directional = (ambient + (1.0 - shadow) * (diffuse + specular));
 	return directional;
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 lightPosEye = vec3(model* vec4(light.position,1.0f));
+    vec3 lightDir = normalize(lightPosEye - fragPos);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     // attenuation
-    float distance    = length(light.position - fragPos);
+    float distance    = length(lightPosEye - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + 
   			     light.quadratic * (distance * distance));    
     // combine results
@@ -117,15 +112,18 @@ void main()
     if(colorFromTexture.a < 0.1)
 	    discard;
 
-    vec3 viewDir = normalize(viewPos - fPosition.xyz);
-    vec3 norm = normalize(fNormal);
+    vec4 fragPosEye = view * model * vec4(fPosition, 1.0f);
+
+    
+
 	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
     vec3 normalEye = normalize(normalMatrix * fNormal);
      
-	vec3 lighting = computeDirLight(normalEye,viewDir); vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
+	vec3 lighting = computeDirLight(normalEye,normalize(-fragPosEye.xyz));// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
     {
+        vec3 viewDir = normalize( vec3(model * vec4(pointLights[i].position,1.0f)) -  vec3(model * vec4(fPosition.xyz,1.0f)));
         color += CalcPointLight(pointLights[i], normalEye, FragPos.xyz, viewDir); 
     }
 

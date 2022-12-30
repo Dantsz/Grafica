@@ -36,13 +36,7 @@ glm::vec3 lightDir = {0.0f, 1.0f, 1.0f};
 glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 
 
-// shader uniform locations
-GLint modelLoc;
-GLint viewLoc;
-GLint projectionLoc;
-GLint normalMatrixLoc;
-GLint lightDirLoc;
-GLint lightColorLoc;
+
 
 // camera
 gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -71,8 +65,8 @@ glm::mat3 normalMatrix;
 //generate FBO ID
 GLuint shadowMapFBO;
 GLuint depthMapTexture;
-const unsigned int SHADOW_WIDTH = 2048;
-const unsigned int SHADOW_HEIGHT = 2048;
+const unsigned int SHADOW_WIDTH = 4196;
+const unsigned int SHADOW_HEIGHT = 4196;
 GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 100.0f;
 glm::vec3 lightEye{ 0.0f };
 glm::vec4 shadow_projection_coord = { -100.0f, 100.0f, -100.0f, 100.0f };
@@ -83,10 +77,10 @@ gps::SkyBox mySkyBox;
 gps::Shader skyboxShader;
 //point light
 glm::vec3 pointLightPositions[] = {
-    glm::vec3(10.257f,  0,  -42.05f),
-    glm::vec3(126.257f,  18.0f,  -6.05f),
+    glm::vec3(-112.0f,  11.41f,  -40.0f),
+    glm::vec3(-112.0f,  11.41f,  40.0f),
     glm::vec3(112.0f,  11.41f,  40.0f),
-    glm::vec3(13.0,  0,  -42.05f)
+    glm::vec3(112.0f,  11.41f,  -40.0f),
 };
 glm::vec3 pointLightColor[] = {
     glm::vec3(1.f,  0,  1.f),
@@ -299,32 +293,13 @@ glm::mat4 computeLightSpaceTrMatrix() {
 void initUniforms() {
 	myBasicShader.useShaderProgram();
 
-	viewLoc = glGetUniformLocation(myBasicShader.shaderProgram, "view");
-	// send view matrix to shader
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-    // compute normal matrix for teapot
-    
-	normalMatrixLoc = glGetUniformLocation(myBasicShader.shaderProgram, "normalMatrix");
-
-	// create projection matrix
 	projection = glm::perspective(glm::radians(45.0f),
                                (float)myWindow.getWindowDimensions().width / (float)myWindow.getWindowDimensions().height,
                                0.1f, render_distance);
-	projectionLoc = glGetUniformLocation(myBasicShader.shaderProgram, "projection");
-	// send projection matrix to shader
-	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
-
-	//set the light direction (direction towards the light)
-	lightDirLoc = glGetUniformLocation(myBasicShader.shaderProgram, "lightDir");
-	// send light dir to shader
+    myBasicShader.setMat4("projection", projection);
+    myBasicShader.setVec3("lightColor", lightColor);
 	
-
-	//set light color
-	
-	lightColorLoc = glGetUniformLocation(myBasicShader.shaderProgram, "lightColor");
-	// send light color to shader
-	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
 }
 
 
@@ -379,40 +354,41 @@ void renderScene() {
     myBasicShader.setVec3("pointLights[0].color", pointLightColor[0]);
     myBasicShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
     myBasicShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setVec3("pointLights[0].specular", 25.0f, 25.0f, 25.0f);
     myBasicShader.setFloat("pointLights[0].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[0].linear", 0.09f);
-    myBasicShader.setFloat("pointLights[0].quadratic", 0.032f);
+    myBasicShader.setFloat("pointLights[0].linear", 0.18f);
+    myBasicShader.setFloat("pointLights[0].quadratic", 0.064f);
     // point light 2
     myBasicShader.setVec3("pointLights[1].position", pointLightPositions[1]);
     myBasicShader.setVec3("pointLights[1].color", pointLightColor[1]);
     myBasicShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
     myBasicShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setVec3("pointLights[1].specular", 25.0f, 25.0f, 25.0f);
     myBasicShader.setFloat("pointLights[1].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[1].linear", 0.09f);
-    myBasicShader.setFloat("pointLights[1].quadratic", 0.032f);
+    myBasicShader.setFloat("pointLights[1].linear", 0.18f);
+    myBasicShader.setFloat("pointLights[1].quadratic", 0.065f);
     // point light 3
     myBasicShader.setVec3("pointLights[2].position", pointLightPositions[2]);
     myBasicShader.setVec3("pointLights[2].color", pointLightColor[2]);
-    myBasicShader.setVec3("pointLights[2].ambient", 50.f, 50.f, 50.f);
+    myBasicShader.setVec3("pointLights[2].ambient", 10.f, 10.f, 10.f);
     myBasicShader.setVec3("pointLights[2].diffuse", 80.0f, 80.0f, 80.0f);
-    myBasicShader.setVec3("pointLights[2].specular", 10000.0f, 10000.0f, 10000.0f);
-    myBasicShader.setFloat("pointLights[2].constant", .5f);
-    myBasicShader.setFloat("pointLights[2].linear", 0.09f);
-    myBasicShader.setFloat("pointLights[2].quadratic", 0.032f);
+    myBasicShader.setVec3("pointLights[2].specular", 1000.0f, 1000.0f, 1000.0f);
+    myBasicShader.setFloat("pointLights[2].constant", 1.f);
+    myBasicShader.setFloat("pointLights[2].linear", 0.9f);
+    myBasicShader.setFloat("pointLights[2].quadratic", 0.32f);
     // point light 4
     myBasicShader.setVec3("pointLights[3].position", pointLightPositions[3]);
     myBasicShader.setVec3("pointLights[3].color", pointLightColor[3]);
     myBasicShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
     myBasicShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+    myBasicShader.setVec3("pointLights[3].specular", 25.0f, 25.0f, 25.0f);
     myBasicShader.setFloat("pointLights[3].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[3].linear", 0.09f);
-    myBasicShader.setFloat("pointLights[3].quadratic", 0.032f);
+    myBasicShader.setFloat("pointLights[3].linear", 0.18f);
+    myBasicShader.setFloat("pointLights[3].quadratic", 0.064f);
 
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    normalMatrix = glm::mat3(glm::inverseTranspose(model));
     myBasicShader.setMat3("normalMatrix",normalMatrix);
+    
     for ( auto& object : objects)
     {
         object.render(myBasicShader, view);
