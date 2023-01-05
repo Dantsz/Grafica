@@ -15,7 +15,7 @@
 #include "Object.h"
 #include <iostream>
 #include "imgui.h"
-
+#include <array>
 #include "imgui_internal.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -25,7 +25,6 @@
 gps::Window myWindow;
 int retina_width, retina_height;
 // matrices
-glm::mat4 model;
 glm::mat4 view;
 glm::mat4 projection;
 
@@ -76,13 +75,17 @@ std::vector<const GLchar*> faces;
 gps::SkyBox mySkyBox;
 gps::Shader skyboxShader;
 //point light
-glm::vec3 pointLightPositions[] = {
+float constant = 1.f;
+float linear = 0.09f;
+float quadratic = 0.032f;
+
+std::array<glm::vec3, 4> pointLightPositions = {
     glm::vec3(-112.0f,  11.41f,  -40.0f),
     glm::vec3(-112.0f,  11.41f,  40.0f),
-    glm::vec3(112.0f,  11.41f,  40.0f),
+    glm::vec3(0.0f,  11.41f,  0.0f),
     glm::vec3(112.0f,  11.41f,  -40.0f),
 };
-glm::vec3 pointLightColor[] = {
+std::array<glm::vec3,4> pointLightColor = {
     glm::vec3(1.f,  0,  1.f),
     glm::vec3(0.0f,  0,  1.0f),
     glm::vec3(0.0f,  1.0,  0.f),
@@ -349,45 +352,18 @@ void renderScene() {
 
     myBasicShader.setVec3("viewPos", myCamera.cameraPosition);
     myBasicShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
-    // point light 1
-    myBasicShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-    myBasicShader.setVec3("pointLights[0].color", pointLightColor[0]);
-    myBasicShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
-    myBasicShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[0].specular", 25.0f, 25.0f, 25.0f);
-    myBasicShader.setFloat("pointLights[0].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[0].linear", 0.18f);
-    myBasicShader.setFloat("pointLights[0].quadratic", 0.064f);
-    // point light 2
-    myBasicShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-    myBasicShader.setVec3("pointLights[1].color", pointLightColor[1]);
-    myBasicShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
-    myBasicShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[1].specular", 25.0f, 25.0f, 25.0f);
-    myBasicShader.setFloat("pointLights[1].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[1].linear", 0.18f);
-    myBasicShader.setFloat("pointLights[1].quadratic", 0.065f);
-    // point light 3
-    myBasicShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-    myBasicShader.setVec3("pointLights[2].color", pointLightColor[2]);
-    myBasicShader.setVec3("pointLights[2].ambient", 10.f, 10.f, 10.f);
-    myBasicShader.setVec3("pointLights[2].diffuse", 80.0f, 80.0f, 80.0f);
-    myBasicShader.setVec3("pointLights[2].specular", 1000.0f, 1000.0f, 1000.0f);
-    myBasicShader.setFloat("pointLights[2].constant", 1.f);
-    myBasicShader.setFloat("pointLights[2].linear", 0.9f);
-    myBasicShader.setFloat("pointLights[2].quadratic", 0.32f);
-    // point light 4
-    myBasicShader.setVec3("pointLights[3].position", pointLightPositions[3]);
-    myBasicShader.setVec3("pointLights[3].color", pointLightColor[3]);
-    myBasicShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
-    myBasicShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
-    myBasicShader.setVec3("pointLights[3].specular", 25.0f, 25.0f, 25.0f);
-    myBasicShader.setFloat("pointLights[3].constant", 1.0f);
-    myBasicShader.setFloat("pointLights[3].linear", 0.18f);
-    myBasicShader.setFloat("pointLights[3].quadratic", 0.064f);
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(model));
-    myBasicShader.setMat3("normalMatrix",normalMatrix);
+    for (size_t i = 0; i < pointLightPositions.size(); i++)
+    {
+        myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].position", pointLightPositions[i]);
+        myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].color", pointLightColor[i]);
+        myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].ambient", pointLightColor[i].x * 0.1, pointLightColor[i].y * 0.1, pointLightColor[i].z * 0.1);
+        myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].diffuse", pointLightColor[i].x, pointLightColor[i].y, pointLightColor[i].z);
+        myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].specular", pointLightColor[i].x, pointLightColor[i].y, pointLightColor[i].z);
+        myBasicShader.setFloat("pointLights[" + std::to_string(i) + "].constant", constant);
+        myBasicShader.setFloat("pointLights[" + std::to_string(i) + "].linear", linear);
+        myBasicShader.setFloat("pointLights[" + std::to_string(i) + "].quadratic", quadratic);
+    }
+     
     
     for ( auto& object : objects)
     {
@@ -438,7 +414,6 @@ int main(int argc, const char * argv[]) {
         ImGui::NewFrame();
         ImGui::Begin("Stats");
             ImGui::InputFloat3("Position",   glm::value_ptr(myCamera.cameraPosition));
-            ImGui::InputFloat3("Camera target",    glm::value_ptr(myCamera.cameraTarget));
             ImGui::InputFloat3("Front direction",  glm::value_ptr(myCamera.cameraFrontDirection));
             ImGui::InputFloat3("Right direction",  glm::value_ptr(myCamera.cameraRightDirection));
             ImGui::InputFloat3("UP direction",     glm::value_ptr(myCamera.cameraUpDirection));
@@ -479,8 +454,40 @@ int main(int argc, const char * argv[]) {
                 glDisable(GL_BLEND);
             }
         }
+     
         ImGui::End();
 
+        ImGui::Begin("Point lights");
+        if (ImGui::CollapsingHeader("Positions"))
+        {
+            for (size_t i = 0; i < pointLightPositions.size() ; i++)
+            {
+                ImGui::InputFloat3( ("Pos" + std::to_string(i)).c_str(), glm::value_ptr(pointLightPositions[i]));
+            }
+        }
+        if (ImGui::CollapsingHeader("Colors"))
+        {
+            for (size_t i = 0; i < pointLightColor.size(); i++)
+            {
+                ImGui::InputFloat3(("Col" + std::to_string(i)).c_str(), glm::value_ptr(pointLightColor[i]));
+            }
+        }
+        ImGui::Separator();
+
+        ImGui::InputFloat("Constant", &constant, 0.05f);
+        ImGui::InputFloat("Linear", &linear, 0.05f);
+        ImGui::InputFloat("Quadratic", &quadratic, 0.05f);
+        ImGui::End();
+
+        ImGui::Begin("Control");
+        if (ImGui::Button("Recompile shaders"))
+        {
+            myBasicShader.loadShader(
+                "shaders/basic.vert",
+                "shaders/basic.frag");
+            initUniforms();
+        }
+        ImGui::End();
         processMovement();
       
    

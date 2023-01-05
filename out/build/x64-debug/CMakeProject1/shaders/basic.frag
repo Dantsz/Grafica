@@ -11,6 +11,7 @@ uniform vec3 viewPos;
 //matrices
 uniform mat4 view;
 uniform mat4 model;
+uniform mat4 projection;
 uniform mat3 normalMatrix;
 
 
@@ -57,9 +58,9 @@ float computeShadow(vec3 normal)
 }
 vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
 {
-	float ambientStrength = 0.1f;
-	float specularStrength = 0.25f;
-	float shininess = 1.0f;
+	float ambientStrength = 0.2f;
+	float specularStrength = 0.5f;
+	float shininess = 32.0f;
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
@@ -72,9 +73,12 @@ vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
     //compute diffuse light
     diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
     //compute specular light
+   
     vec3 reflectDir = reflect(-lightDirN, normalEye);
     float specCoeff = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);
+
     specular = specularStrength * specCoeff * lightColor;
+
 	ambient *= texture(diffuseTexture, fTexCoords).rgb;
 	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
 	specular *= texture(specularTexture, fTexCoords).rgb;
@@ -85,17 +89,17 @@ vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    vec3 lightPosEye = vec3(model* vec4(light.position,1.0f));
-    vec3 lightDir = normalize(lightPosEye - fragPos);
+    
+    vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     // attenuation
-    float distance    = length(lightPosEye - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + 
-  			     light.quadratic * (distance * distance));    
+    float dist    = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * dist + 
+  			     light.quadratic * (dist * dist));    
     // combine results
     vec3 ambient  = light.ambient  * vec3(texture(diffuseTexture, fTexCoords)) * light.color;
     vec3 diffuse  = light.diffuse  * diff * vec3(texture(diffuseTexture, fTexCoords)) * light.color;
@@ -112,22 +116,18 @@ void main()
     if(colorFromTexture.a < 0.1)
 	    discard;
 
-    vec4 fragPosEye = view * model * vec4(fPosition, 1.0f);
-
-    
 
 	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
     vec3 normalEye = normalize(normalMatrix * fNormal);
-     
-	vec3 lighting = computeDirLight(normalEye,normalize(-fragPosEye.xyz));// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
+    vec3 viewDir = normalize( viewPos -  fPosition.xyz);
+    //vec3(normalEye * FragPos.xyz,1.0f))
+	vec3 lighting = computeDirLight(normalEye,viewDir);// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
     {
-        vec3 viewDir = normalize( vec3(model * vec4(pointLights[i].position,1.0f)) -  vec3(model * vec4(fPosition.xyz,1.0f)));
-        color += CalcPointLight(pointLights[i], normalEye, FragPos.xyz, viewDir); 
+        lighting += CalcPointLight(pointLights[i], normalEye, FragPos.xyz, viewDir)/  color;
+       
     }
-
-	
 
     fColor = vec4(lighting *  color, 1.0f);
 }

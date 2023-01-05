@@ -4,12 +4,12 @@
 namespace gps {
 
     //Camera constructor
-    Camera::Camera(glm::vec3 cameraPosition, glm::vec3 cameraTarget, glm::vec3 cameraUp) :
+    Camera::Camera(glm::vec3 cameraPosition, glm::vec3 cameraTarget, glm::vec3 cameraUp):
         cameraPosition(cameraPosition),
-        cameraTarget(cameraTarget),
         cameraUpDirection(cameraUp),
         cameraFrontDirection(glm::normalize(cameraTarget - cameraPosition)),
-        cameraRightDirection(glm::rotate(glm::radians(360.0f - 90.0f), glm::vec3(0.0f, 1.0f, 0.0f))* glm::vec4(glm::normalize(cameraTarget - cameraPosition), 0.0f))
+        cameraRightDirection(glm::rotate(glm::radians(360.0f - 90.0f), glm::vec3(0.0f, 1.0f, 0.0f))* glm::vec4(glm::normalize(cameraTarget - cameraPosition), 0.0f)),
+        worldUpDirection(cameraUp)
 
     {
   
@@ -18,7 +18,7 @@ namespace gps {
     //return the view matrix, using the glm::lookAt() function
     glm::mat4 Camera::getViewMatrix() {
   
-        return glm::lookAt(cameraPosition, cameraTarget, cameraUpDirection);
+        return glm::lookAt(cameraPosition, cameraPosition + cameraFrontDirection, cameraUpDirection);
         // return glm::lookAt(cameraPosition, cameraPosition + cameraFrontDirection, cameraUpDirection);
     }
 
@@ -43,7 +43,7 @@ namespace gps {
             movement -= speed * cameraRightDirection;
             break;
         }
-        cameraTarget += movement;
+   
         cameraPosition = cameraPosition + movement;
 
     }
@@ -57,14 +57,26 @@ namespace gps {
           cameraTarget = glm::vec4(cameraTarget,0.0f) * cameraPos;
           cameraFrontDirection = glm::vec4(cameraFrontDirection,.0f) * cameraPos;
           cameraRightDirection = glm::vec4(cameraRightDirection, .0f) * cameraPos;*/
-     
-        auto cameraPos = glm::rotate(glm::mat4(1.0f), yaw, cameraUpDirection);
-        cameraPos = glm::rotate(cameraPos, pitch, cameraRightDirection);
+        m_yaw += yaw;
+        m_pitch += pitch;
+        if (m_pitch > 89.0f)
+            m_pitch = 89.0f;
+        if (m_pitch < -89.0f)
+            m_pitch = -89.0f;
 
-        cameraTarget = glm::vec4(cameraTarget, 0.0f) * cameraPos;
-        const auto view_dir = cameraTarget - cameraPosition;
-        const auto normalized_dir = glm::normalize(view_dir);
-        cameraFrontDirection = normalized_dir;
-        cameraRightDirection = glm::rotate(glm::radians(360.0f - 90.0f), cameraUpDirection) * glm::vec4(normalized_dir, 0.0f);
+     
+        update();
+        
+
+    }
+    void  Camera::update()
+    {
+        glm::vec3 front;
+        front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        front.y = sin(glm::radians(m_pitch));
+        front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        cameraFrontDirection = glm::normalize(front);
+        cameraRightDirection = glm::normalize(glm::cross(cameraFrontDirection, worldUpDirection));
+        cameraUpDirection = glm::normalize(glm::cross(cameraRightDirection, cameraFrontDirection));
     }
 }
