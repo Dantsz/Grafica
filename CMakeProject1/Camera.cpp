@@ -72,9 +72,9 @@ namespace gps {
     void  Camera::update()
     {
         glm::vec3 front;
-        front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-        front.y = sin(glm::radians(m_pitch));
-        front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+        front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(-m_pitch));
+        front.y = sin(glm::radians(-m_pitch));
+        front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(-m_pitch));
         cameraFrontDirection = glm::normalize(front);
         cameraRightDirection = glm::normalize(glm::cross(cameraFrontDirection, worldUpDirection));
         cameraUpDirection = glm::normalize(glm::cross(cameraRightDirection, cameraFrontDirection));
