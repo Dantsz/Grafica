@@ -119,13 +119,13 @@ void main()
 
 	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
     vec3 normalEye = normalize(normalMatrix * fNormal);
-    vec3 viewDir = normalize( viewPos -  fPosition.xyz);
+    vec3 viewDir = normalize(viewPos -  FragPos.xyz);
     //vec3(normalEye * FragPos.xyz,1.0f))
 	vec3 lighting = computeDirLight(normalEye,viewDir);// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
     {
-        lighting += CalcPointLight(pointLights[i], normalEye, FragPos.xyz, viewDir)/  color;
+        lighting += CalcPointLight(pointLights[i], normalEye, (model * vec4(fPosition,1.0f)).xyz, viewDir)/  color;
        
     }
 

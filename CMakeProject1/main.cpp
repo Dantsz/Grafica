@@ -81,15 +81,15 @@ float quadratic = 0.032f;
 
 std::array<glm::vec3, 4> pointLightPositions = {
     glm::vec3(-112.0f,  11.41f,  -40.0f),
-    glm::vec3(-112.0f,  11.41f,  40.0f),
-    glm::vec3(0.0f,  11.41f,  0.0f),
-    glm::vec3(112.0f,  11.41f,  -40.0f),
+    glm::vec3(-137.995f,  18.931f,  -6.329f),
+    glm::vec3(111.0f,  0.0F,  0.0f),
+    glm::vec3(-138.808f,  18.380F,  -1.111f),
 };
 std::array<glm::vec3,4> pointLightColor = {
-    glm::vec3(1.f,  0,  1.f),
+    glm::vec3(0.f,  0,  1.f),
     glm::vec3(0.0f,  0,  1.0f),
-    glm::vec3(0.0f,  1.0,  0.f),
-    glm::vec3(1.0,  1.0f,  0.0f)
+    glm::vec3(10.0f,  10.0,  0.f),
+    glm::vec3(1.0,  0.0f,  0.0f)
 };
 
 GLenum glCheckError_(const char *file, int line)
