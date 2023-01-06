@@ -51,14 +51,29 @@ float ShadowCalculation(vec3 fragPos)
     // now get current linear depth as the length between the fragment and light position
     float currentDepth = length(fragToLight);
     // now test for shadows
-    float bias = 0.05; 
-    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
-    fColor = vec4(vec3(closestDepth / far_plane), 1.0);  
+    float shadow  = 0.0;
+    float bias    = 0.05; 
+    float samples = 4.0;
+    float offset  = 0.1;
+    for(float x = -offset; x < offset; x += offset / (samples * 0.5))
+    {
+        for(float y = -offset; y < offset; y += offset / (samples * 0.5))
+        {
+            for(float z = -offset; z < offset; z += offset / (samples * 0.5))
+            {
+                float closestDepth = texture(depthMap, fragToLight + vec3(x, y, z)).r; 
+                closestDepth *= far_plane;   // undo mapping [0;1]
+                if(currentDepth - bias > closestDepth)
+                    shadow += 1.0;
+            }
+        }
+    }
+    shadow /= (samples * samples * samples);
     return shadow;
 }  
-vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
+vec3 computeDirLight(vec3 fragPos,vec3 normalEye ,vec3 viewDir)
 {
-    vec3 fragPos = (model * vec4(fPosition,1.0f)).xyz;
+   
 
 	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
     vec3 normal = normalEye;
@@ -112,16 +127,16 @@ void main()
     if(colorFromTexture.a < 0.1)
 	    discard;
 
-
+    vec3 fragPos = (model * vec4(fPosition,1.0f)).xyz;
 	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
     vec3 normalEye = normalize(normalMatrix * fNormal);
     vec3 viewDir = normalize(viewPos -  FragPos.xyz);
     //vec3(normalEye * FragPos.xyz,1.0f))
-	vec3 lighting = computeDirLight(normalEye,viewDir);// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
+	vec3 lighting = computeDirLight(fragPos,normalEye,viewDir);// vec3(0,0,0);//  computeDirLight(normalEye,viewDir);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
     {
-        lighting += CalcPointLight(pointLights[i], normalEye, (model * vec4(fPosition,1.0f)).xyz, viewDir)/  color;
+        lighting += CalcPointLight(pointLights[i], normalEye, fragPos, viewDir)/  color;
        
     }
     
