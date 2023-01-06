@@ -4,7 +4,7 @@ in vec4 FragPos;
 in vec3 fPosition;
 in vec3 fNormal;
 in vec2 fTexCoords;
-in vec4 fragPosLightSpace;
+
 out vec4 fColor;
 
 uniform vec3 viewPos;
@@ -16,12 +16,13 @@ uniform mat3 normalMatrix;
 
 
 //lighting
-uniform vec3 lightDir;
+uniform vec3 lightPos;
 uniform vec3 lightColor;
+uniform float far_plane;
+uniform samplerCube depthMap;
 // textures
 uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
-uniform sampler2D shadowMap;
  
 //point light struct
 struct PointLight {    
@@ -39,50 +40,45 @@ struct PointLight {
 #define NR_POINT_LIGHTS 4 
 uniform PointLight pointLights[4];
 
-float computeShadow(vec3 normal)
-{	
-	// perform perspective divide
-	vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-	// Transform to [0,1] range
-	normalizedCoords = normalizedCoords * 0.5 + 0.5;
-	if (normalizedCoords.z > 1.0f)
-		return 0.0f;
-	// Get closest depth value from light's perspective
-	float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
-	// Get depth of current fragment from light's perspective
-	float currentDepth = normalizedCoords.z;
-	// Check whether current frag pos is in shadow
-	float bias = max(0.05f * (1.0f - dot(normal, lightDir)), 0.005f);
-	float shadow = currentDepth - bias > closestDepth ? 1.0f : 0.0f;
-	return shadow;
-}
+float ShadowCalculation(vec3 fragPos)
+{
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - lightPos;
+    // use the light to fragment vector to sample from the depth map    
+    float closestDepth = texture(depthMap, fragToLight).r;
+    // it is currently in linear range between [0,1]. Re-transform back to original value
+    closestDepth *= far_plane;
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    // now test for shadows
+    float bias = 0.05; 
+    float shadow = currentDepth -  bias > closestDepth ? 1.0 : 0.0;
+    fColor = vec4(vec3(closestDepth / far_plane), 1.0);  
+    return shadow;
+}  
 vec3 computeDirLight(vec3 normalEye ,vec3 viewDir)
 {
-	float ambientStrength = 0.2f;
-	float specularStrength = 0.5f;
-	float shininess = 32.0f;
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+    vec3 fragPos = (model * vec4(fPosition,1.0f)).xyz;
 
-
-    //normalize light direction
-    vec3 lightDirN = normalize(lightDir);
-    //compute ambient light
-    ambient = ambientStrength * lightColor;
-    //compute diffuse light
-    diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
-    //compute specular light
+	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
+    vec3 normal = normalEye;
+    vec3 lightColor = vec3(0.3);
+    // ambient
+    vec3 ambient = 0.3 * color;
+    // diffuse
+    vec3 lightDir = normalize(lightPos - fragPos);
+    float diff = max(dot(lightDir, normal), 0.0);
+    vec3 diffuse = diff * lightColor;
+    // specular
    
-    vec3 reflectDir = reflect(-lightDirN, normalEye);
-    float specCoeff = pow(max(dot(viewDir, reflectDir), 0.0f), shininess);
-
-    specular = specularStrength * specCoeff * lightColor;
-
-	ambient *= texture(diffuseTexture, fTexCoords).rgb;
-	diffuse *= texture(diffuseTexture, fTexCoords).rgb;
-	specular *= texture(specularTexture, fTexCoords).rgb;
-	float shadow = computeShadow(normalEye);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = 0.0;
+    vec3 halfwayDir = normalize(lightDir + viewDir);  
+    spec = pow(max(dot(normal, halfwayDir), 0.0), 64.0);
+    vec3 specular = spec * lightColor;    
+    // calculate shadow
+    float shadow = ShadowCalculation(fragPos);                      
+    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;   
 	vec3 directional = (ambient + (1.0 - shadow) * (diffuse + specular));
 	return directional;
 }
@@ -128,6 +124,7 @@ void main()
         lighting += CalcPointLight(pointLights[i], normalEye, (model * vec4(fPosition,1.0f)).xyz, viewDir)/  color;
        
     }
+    
 
     fColor = vec4(lighting *  color, 1.0f);
 }

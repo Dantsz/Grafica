@@ -15,7 +15,7 @@ class Shader
 {
 public:
     GLuint shaderProgram;
-    void loadShader(std::string vertexShaderFileName, std::string fragmentShaderFileName);
+    void loadShader(std::string vertexShaderFileName, std::string fragmentShaderFileName, std::string geometryShaderFileName = "");
     void useShaderProgram();
     void setVec3(const std::string& name, const glm::vec3& value) const
     {

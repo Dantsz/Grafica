@@ -49,7 +49,7 @@ namespace gps {
         }
     }
 
-    void Shader::loadShader(std::string vertexShaderFileName, std::string fragmentShaderFileName)
+    void Shader::loadShader(std::string vertexShaderFileName, std::string fragmentShaderFileName, std::string geometryShaderFileName)
     {
         //read, parse and compile the vertex shader
         std::string v = readShaderFile(vertexShaderFileName);
@@ -71,13 +71,34 @@ namespace gps {
         //check compilation status
         shaderCompileLog(fragmentShader);
 
+
+        GLuint geometryShader = -1;
+        if (!geometryShaderFileName.empty())
+        {
+            std::string g = readShaderFile(geometryShaderFileName);
+            const GLchar* geometryShaderString = g.c_str();
+            
+            geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+            glShaderSource(geometryShader, 1, &geometryShaderString, NULL);
+            glCompileShader(geometryShader);
+            shaderCompileLog(geometryShader);
+        }
+
         //attach and link the shader programs
         this->shaderProgram = glCreateProgram();
         glAttachShader(this->shaderProgram, vertexShader);
         glAttachShader(this->shaderProgram, fragmentShader);
+        if (!geometryShaderFileName.empty())
+        {
+            glAttachShader(this->shaderProgram, geometryShader);
+        }
         glLinkProgram(this->shaderProgram);
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
+        if (!geometryShaderFileName.empty())
+        {
+            glDeleteShader(geometryShader);
+        }
         //check linking info
         shaderLinkLog(this->shaderProgram);
     }

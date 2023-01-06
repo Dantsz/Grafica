@@ -62,13 +62,12 @@ float lightAngle = 0.0f;
 glm::mat4 lightMatrixTR;
 glm::mat3 normalMatrix;
 //generate FBO ID
-GLuint shadowMapFBO;
-GLuint depthMapTexture;
+
+
 const unsigned int SHADOW_WIDTH = 4196;
 const unsigned int SHADOW_HEIGHT = 4196;
-GLfloat lightSpaceTrMatrix_near_plane = 0.1f, lightSpaceTrMatrix_far_plane = 100.0f;
+
 glm::vec3 lightEye{ 0.0f };
-glm::vec4 shadow_projection_coord = { -100.0f, 100.0f, -100.0f, 100.0f };
 std::vector<Object> objects{};
 //skybox
 std::vector<const GLchar*> faces;
@@ -91,6 +90,10 @@ std::array<glm::vec3,4> pointLightColor = {
     glm::vec3(10.0f,  10.0,  0.f),
     glm::vec3(1.0,  0.0f,  0.0f)
 };
+
+//for point shadows
+unsigned int depthCubemap;
+unsigned int depthMapFBO;
 
 GLenum glCheckError_(const char *file, int line)
 {
@@ -126,6 +129,13 @@ GLenum glCheckError_(const char *file, int line)
 }
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 
+glm::vec3 lightPos(0.0f, 1.0f, 0.0f);
+float near_plane = 1.0f;
+float far_plane = 1000.0f;
+glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near_plane, far_plane);
+std::vector<glm::mat4> shadowTransforms;
+
+
 void windowResizeCallback(GLFWwindow* window, int width, int height) {
 	fprintf(stdout, "Window resized! New width: %d , and height: %d\n", width, height);
 	//TODO
@@ -142,26 +152,24 @@ void initSkybox()
     skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
 }
 void initFBO() {
-    glGenFramebuffers(1, &shadowMapFBO);
-    //TODO - Create the FBO, the depth texture and attach the depth texture to the FBO
-    //create depth texture for FBO
-    glGenTextures(1, &depthMapTexture);
-    glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-        SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    // attach texture to FBO
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTexture,
-        0);
+    //create point shadow stuff
+    glGenFramebuffers(1, &depthMapFBO);
+    glGenTextures(1, &depthCubemap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+    for (unsigned int i = 0; i < 6; ++i)
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    // attach depth texture as FBO's depth buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    shadowTransforms.resize(6);
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -271,9 +279,9 @@ void initOpenGLState() {
 
 void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
-    debris_model->LoadModel("models/debris/debris.obj");
-    ground_model->LoadModel("models/ground/ground.obj");
-    dust2_model->LoadModel("models/cluck/untitled.obj");
+   // debris_model->LoadModel("models/debris/debris.obj");
+   // ground_model->LoadModel("models/ground/ground.obj");
+   // dust2_model->LoadModel("models/cluck/untitled.obj");
     sponza_model->LoadModel("models/Sponza/sponza.obj");
 }
 
@@ -281,16 +289,7 @@ void initShaders() {
 	myBasicShader.loadShader(
         "shaders/basic.vert",
         "shaders/basic.frag");
-    depthMapShader.loadShader ("shaders/shadow.vert", "shaders/shadow.frag");
-}
-glm::mat4 computeLightSpaceTrMatrix() {
-    //TODO - Return the light-space transformation matrix
-    glm::vec3 ld = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 0.0f));
-    glm::mat4 lightView = glm::lookAt(ld, lightEye, glm::vec3(0.0f, 1.0f, 0.0f));
-  
-    glm::mat4 lightProjection = glm::ortho(shadow_projection_coord[0], shadow_projection_coord[1], shadow_projection_coord[2], shadow_projection_coord[3], lightSpaceTrMatrix_near_plane, lightSpaceTrMatrix_far_plane);
-    glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
-    return lightSpaceTrMatrix;
+    depthMapShader.loadShader ("shaders/shadow.vert", "shaders/shadow.frag","shaders/shadow.geo");
 }
 
 void initUniforms() {
@@ -306,22 +305,29 @@ void initUniforms() {
 }
 
 
+
 void renderScene() {
 	//SHADOW
     depthMapShader.useShaderProgram();
-    lightMatrixTR = computeLightSpaceTrMatrix();  
-    depthMapShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
-
+    shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near_plane, far_plane);
+    shadowTransforms[0] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms[1] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms[2] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms[3] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms[4] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms[5] = (shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
-
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
-    glCullFace(GL_FRONT);
+   
+    for (unsigned int i = 0; i < 6; ++i)
+        depthMapShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+    depthMapShader.setFloat("far_plane", far_plane);
+    depthMapShader.setVec3("lightPos", lightPos);
     for ( auto& object : objects)
     {
         object.render(depthMapShader, view, true);
     }
-    glCullFace(GL_BACK);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -347,11 +353,13 @@ void renderScene() {
     myBasicShader.setVec3("lightDir", lightVec);
     //bind the shadow map
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-    glUniform1i(glGetUniformLocation(myBasicShader.shaderProgram, "shadowMap"), 3);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+    glUniform1i(glGetUniformLocation(myBasicShader.shaderProgram, "depthMap"), 3);
 
     myBasicShader.setVec3("viewPos", myCamera.cameraPosition);
     myBasicShader.setMat4("lightSpaceTrMatrix", lightMatrixTR);
+    myBasicShader.setFloat("far_plane", far_plane);
+    myBasicShader.setVec3("lightPos", lightPos);
     for (size_t i = 0; i < pointLightPositions.size(); i++)
     {
         myBasicShader.setVec3("pointLights[" + std::to_string(i) + "].position", pointLightPositions[i]);
@@ -385,7 +393,8 @@ int main(int argc, const char * argv[]) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
+    
+   
     initOpenGLState();
     setWindowCallbacks();
     initImGuiContext(myWindow.getWindow());
@@ -423,9 +432,9 @@ int main(int argc, const char * argv[]) {
             ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
             ImGui::InputFloat("Angle", &lightAngle, 1.f);
             ImGui::InputFloat3("Light Eye", glm::value_ptr(lightEye));
-            ImGui::InputFloat("Light Space Tr Matrix Near_plane", &lightSpaceTrMatrix_near_plane,0.05f);
-            ImGui::InputFloat("Light Space Tr Matrix Far_plane", &lightSpaceTrMatrix_far_plane, 0.05f);
-            ImGui::InputFloat4("shadow_projection_coord:", glm::value_ptr(shadow_projection_coord));
+            ImGui::InputFloat3("LightPos", glm::value_ptr(lightPos));
+            ImGui::InputFloat("Near plane", &near_plane, 0.1f, 1.0f);
+            ImGui::InputFloat("Far Plane", &far_plane, 0.1f, 1.0f);
         ImGui::End();
         ImGui::Begin("Teapot position");
             ImGui::InputFloat("x:",&ps.x,0.1f,1.0f);
