@@ -392,45 +392,18 @@ int main(int argc, const char * argv[]) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-    
-   
-    initOpenGLState();
-    setWindowCallbacks();
-    initImGuiContext(myWindow.getWindow());
-  
-
-	initModels();
-	initShaders();
-	initUniforms();
-    initFBO();
-    initSkybox();
-    glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
-	glCheckError();
-	// application loop
-    glm::vec3 ps = { 0.0f,1.0f,0.0f };
-
-    
-    objects.emplace_back(std::make_unique<GravityObject>(teapot_model));
-    objects.emplace_back(std::make_unique<Object>(teapot_model));
-    objects.emplace_back(std::make_unique<Object>(sponza_model));
-
-    objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
-
-
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
     btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
     btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+ 
     btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,
         overlappingPairCache, solver, collisionConfiguration);
-
-   
-
+    dynamicsWorld->setGravity(btVector3(0, -10, 0));
     
-    dynamicsWorld -> setGravity(btVector3(0, -10, 0));
     btAlignedObjectArray<btCollisionShape*> collisionShapes;
     {
-       // btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
+        // btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
         btVector3 planeNormal = btVector3(0.0f, 1.0f, 0.0f);
         btStaticPlaneShape* groundShape = new btStaticPlaneShape(planeNormal, 0);
         collisionShapes.push_back(groundShape);
@@ -452,73 +425,72 @@ int main(int argc, const char * argv[]) {
         btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
         btRigidBody* body = new btRigidBody(rbInfo);
-
+   
+        body->setRollingFriction(0.5);
+        body->setSpinningFriction(0.1);
+        body->setAnisotropicFriction(groundShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
         //add the body to the dynamics world
         dynamicsWorld->addRigidBody(body);
     }
-    btRigidBody* teapot_body = nullptr;
+
+    initOpenGLState();
+    setWindowCallbacks();
+    initImGuiContext(myWindow.getWindow());
+  
+
+	initModels();
+	initShaders();
+	initUniforms();
+    initFBO();
+    initSkybox();
+    glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
+	glCheckError();
+	// application loop
+    glm::vec3 ps = { 0.0f,1.0f,0.0f };
+
+    for (float i = 0; i < 10; i++)
     {
-        //create a dynamic rigidbody
+        objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.25), 0.5f));
+        
+        GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
+        dynamicsWorld->addRigidBody(teapot->getHitbox());
+        teapot->getHitbox()->setFriction(0.5);
+        teapot->getHitbox()->setRollingFriction(.5f);
+        //teapot->getHitbox()->setDamping(.5,.5);
+        btTransform tr;
+        tr.setIdentity();
+        btQuaternion quat;
+        quat.setEuler(45, 45, 45); //or quat.setEulerZYX depending on the ordering you want
+        tr.setRotation(quat);
+        teapot->getHitbox()->getWorldTransform().setRotation(quat);
 
-        //btCollisionShape* colShape = new btBoxShape(btVector3(1,1,1));
-        btCollisionShape* colShape = new btSphereShape(btScalar(.25));
-        collisionShapes.push_back(colShape);
-
-        /// Create Dynamic Objects
-        btTransform startTransform;
-        startTransform.setIdentity();
-
-        btScalar mass(1.f);
-
-        //rigidbody is dynamic if and only if mass is non zero, otherwise static
-        bool isDynamic = (mass != 0.f);
-
-        btVector3 localInertia(0, 0, 0);
-        if (isDynamic)
-            colShape->calculateLocalInertia(mass, localInertia);
-
-        startTransform.setOrigin(btVector3(2, 10, 0));
-
-        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-        btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
-        teapot_body = new btRigidBody(rbInfo);
-
-        dynamicsWorld->addRigidBody(teapot_body);
+        teapot->getHitbox()->setAngularFactor(0.5);
+        teapot->getHitbox()->setSpinningFriction(1.1);
+        teapot->getHitbox()->setAnisotropicFriction(teapot->getShape()->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+        teapot->setPosition(glm::vec3(2.0f + i / 10.0f, i + 10.0f, +i / 100.0f));
     }
-    for (auto i = 0; i < 100; i++)
-         {
-        
-        
-             // print positions of all objects
-             for (int j = dynamicsWorld -> getNumCollisionObjects() - 1; j >= 0; j--)
-             {
-                 btCollisionObject * obj = dynamicsWorld -> getCollisionObjectArray()[j];
-                 btRigidBody * body = btRigidBody::upcast(obj);
-                 btTransform trans;
-                 if (body && body -> getMotionState())
-                     {
-                     body->getMotionState()->getWorldTransform(trans);
-                
-                     }
-                 else
-                     {
-                     trans = obj -> getWorldTransform();
-                     }
-                 printf(" world pos object %d = %f ,%f ,%f\n", j, float(trans.getOrigin().getX()), float(
-                    trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
-                 }
-         }
+
+  
+
+    objects.emplace_back(std::make_unique<Object>(teapot_model));
+    objects.emplace_back(std::make_unique<Object>(sponza_model));
+
+    objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
+
+
+
+
+   
+
+
 
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
+       
+        for (const auto& object : objects)
+        {
+            object->update();
+        }
         dynamicsWorld->stepSimulation(1.f / 60.f, 10);
-        btTransform trans;
-        teapot_body->getMotionState()->getWorldTransform(trans);
-        printf(" world pos object  = %f ,%f ,%f\n", float(trans.getOrigin().getX()), float(
-            trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
-
-        objects[0]->setPosition(glm::vec3(float(trans.getOrigin().getX()), float(
-            trans.getOrigin().getY()), float(trans.getOrigin().getZ())));
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
