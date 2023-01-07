@@ -412,6 +412,12 @@ void emplace_teapot_gently(glm::vec3 position)
     teapot->setPosition(position);
 }
 
+float delta = 0;
+float movementSpeed = 2; // units per second
+void updateDelta(double elapsedSeconds) {
+    delta  = elapsedSeconds;
+}
+double lastTimeStamp = glfwGetTime();
 
 int main(int argc, const char * argv[]) {
 
@@ -485,12 +491,17 @@ int main(int argc, const char * argv[]) {
     objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
 
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
-       
+        // get current time
+        const double currentTimeStamp = glfwGetTime();
+        updateDelta(currentTimeStamp - lastTimeStamp);
+        lastTimeStamp = currentTimeStamp;
+        std::cout << delta << '\n';
         for (const auto& object : objects)
         {
             object->update();
         }
-        dynamicsWorld->stepSimulation(1.f / 60.f, 10);
+        dynamicsWorld->stepSimulation(delta, 10);
+  
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
