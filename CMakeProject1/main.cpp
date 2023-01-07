@@ -430,13 +430,16 @@ int main(int argc, const char * argv[]) {
    
     
     dynamicsWorld->setGravity(btVector3(0, -10, 0));
-    
+    btDefaultMotionState* ground_motion_state = nullptr;
+    btRigidBody* ground_body = nullptr;
+    btStaticPlaneShape* ground_shape = nullptr;
+
     btAlignedObjectArray<btCollisionShape*> collisionShapes;
     {
         // btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
         btVector3 planeNormal = btVector3(0.0f, 1.0f, 0.0f);
-        btStaticPlaneShape* groundShape = new btStaticPlaneShape(planeNormal, 0);
-        collisionShapes.push_back(groundShape);
+        ground_shape = new btStaticPlaneShape(planeNormal, 0);
+        collisionShapes.push_back(ground_shape);
 
         btTransform groundTransform;
         groundTransform.setIdentity();
@@ -449,18 +452,18 @@ int main(int argc, const char * argv[]) {
 
         btVector3 localInertia(0, 0, 0);
         if (isDynamic)
-            groundShape->calculateLocalInertia(mass, localInertia);
+            ground_shape->calculateLocalInertia(mass, localInertia);
 
         //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
-        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
-        btRigidBody* body = new btRigidBody(rbInfo);
+        ground_motion_state = new btDefaultMotionState(groundTransform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, ground_motion_state, ground_shape, localInertia);
+        ground_body = new btRigidBody(rbInfo);
    
-        body->setRollingFriction(0.5);
-        body->setSpinningFriction(0.1);
-        body->setAnisotropicFriction(groundShape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+        ground_body->setRollingFriction(0.5);
+        ground_body->setSpinningFriction(0.1);
+        ground_body->setAnisotropicFriction(ground_shape->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
         //add the body to the dynamics world
-        dynamicsWorld->addRigidBody(body);
+        dynamicsWorld->addRigidBody(ground_body);
     }
 
     initOpenGLState();
@@ -496,12 +499,13 @@ int main(int argc, const char * argv[]) {
         updateDelta(currentTimeStamp - lastTimeStamp);
         lastTimeStamp = currentTimeStamp;
         std::cout << delta << '\n';
+     
+        dynamicsWorld->stepSimulation(delta, 10);
         for (const auto& object : objects)
         {
             object->update();
         }
-        dynamicsWorld->stepSimulation(delta, 10);
-  
+
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -606,6 +610,20 @@ int main(int argc, const char * argv[]) {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 	cleanup();
+
+    delete ground_motion_state;
+    dynamicsWorld->removeCollisionObject(ground_body);
+    delete ground_body;
+    delete ground_shape;
+    for (const auto& object : objects)
+    {
+        GravityObject* grav = dynamic_cast<GravityObject*>(object.get());
+        if (grav)
+        {
+            dynamicsWorld->removeCollisionObject(grav->getHitbox());
+        }
+    }
+
     delete dynamicsWorld;
     delete solver;
     delete overlappingPairCache;
