@@ -67,7 +67,7 @@ glm::mat3 normalMatrix;
 const unsigned int SHADOW_WIDTH = 4196;
 const unsigned int SHADOW_HEIGHT = 4196;
 
-glm::vec3 lightEye{ 0.0f };
+
 std::vector<Object> objects{};
 //skybox
 std::vector<const GLchar*> faces;
@@ -431,7 +431,6 @@ int main(int argc, const char * argv[]) {
         ImGui::Begin("Global light");
             ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
             ImGui::InputFloat("Angle", &lightAngle, 1.f);
-            ImGui::InputFloat3("Light Eye", glm::value_ptr(lightEye));
             ImGui::InputFloat3("LightPos", glm::value_ptr(lightPos));
             ImGui::InputFloat("Near plane", &near_plane, 0.1f, 1.0f);
             ImGui::InputFloat("Far Plane", &far_plane, 0.1f, 1.0f);
