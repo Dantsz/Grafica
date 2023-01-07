@@ -79,7 +79,14 @@ gps::Shader skyboxShader;
 float constant = 1.f;
 float linear = 0.09f;
 float quadratic = 0.032f;
-
+//physics
+ btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+ btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+ btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
+ btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+ btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+ glm::vec3 teapot_factory_delivery_position = glm::vec3(0, 5, 0);
+    //
 std::array<glm::vec3, 4> pointLightPositions = {
     glm::vec3(-112.0f,  11.41f,  -40.0f),
     glm::vec3(-137.995f,  18.931f,  -6.329f),
@@ -383,6 +390,28 @@ void cleanup() {
     myWindow.Delete();
 }
 
+void emplace_teapot_gently(glm::vec3 position)
+{
+    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.5f), 0.5f));
+
+    GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
+    dynamicsWorld->addRigidBody(teapot->getHitbox());
+    teapot->getHitbox()->setFriction(0.5);
+    teapot->getHitbox()->setRollingFriction(.5f);
+    //teapot->getHitbox()->setDamping(.5,.5);
+    btTransform tr;
+    tr.setIdentity();
+    btQuaternion quat;
+    quat.setEuler(45, 45, 45); //or quat.setEulerZYX depending on the ordering you want
+    tr.setRotation(quat);
+    teapot->getHitbox()->getWorldTransform().setRotation(quat);
+
+    teapot->getHitbox()->setAngularFactor(0.5);
+    teapot->getHitbox()->setSpinningFriction(1.1);
+    teapot->getHitbox()->setAnisotropicFriction(teapot->getShape()->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
+    teapot->setPosition(position);
+}
+
 
 int main(int argc, const char * argv[]) {
 
@@ -392,13 +421,8 @@ int main(int argc, const char * argv[]) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
-    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
-    btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
-    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
- 
-    btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,
-        overlappingPairCache, solver, collisionConfiguration);
+   
+    
     dynamicsWorld->setGravity(btVector3(0, -10, 0));
     
     btAlignedObjectArray<btCollisionShape*> collisionShapes;
@@ -450,24 +474,7 @@ int main(int argc, const char * argv[]) {
 
     for (float i = 0; i < 10; i++)
     {
-        objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.25), 0.5f));
-        
-        GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
-        dynamicsWorld->addRigidBody(teapot->getHitbox());
-        teapot->getHitbox()->setFriction(0.5);
-        teapot->getHitbox()->setRollingFriction(.5f);
-        //teapot->getHitbox()->setDamping(.5,.5);
-        btTransform tr;
-        tr.setIdentity();
-        btQuaternion quat;
-        quat.setEuler(45, 45, 45); //or quat.setEulerZYX depending on the ordering you want
-        tr.setRotation(quat);
-        teapot->getHitbox()->getWorldTransform().setRotation(quat);
-
-        teapot->getHitbox()->setAngularFactor(0.5);
-        teapot->getHitbox()->setSpinningFriction(1.1);
-        teapot->getHitbox()->setAnisotropicFriction(teapot->getShape()->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
-        teapot->setPosition(glm::vec3(2.0f + i / 10.0f, i + 10.0f, +i / 100.0f));
+        emplace_teapot_gently(glm::vec3(2.0f + i / 10.0f, i + 10.0f, +i / 100.0f));
     }
 
   
@@ -476,13 +483,6 @@ int main(int argc, const char * argv[]) {
     objects.emplace_back(std::make_unique<Object>(sponza_model));
 
     objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
-
-
-
-
-   
-
-
 
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
        
@@ -513,6 +513,14 @@ int main(int argc, const char * argv[]) {
             ImGui::InputFloat("x:",&ps.x,0.1f,1.0f);
             ImGui::InputFloat("y:", &ps.y, 0.1f, 1.0f);
             ImGui::InputFloat("z:", &ps.z, 0.1f, 1.0f);
+        ImGui::End();
+        ImGui::Begin("Teapot Factory");
+        
+            ImGui::InputFloat3("Teapot delivery position", glm::value_ptr(teapot_factory_delivery_position));
+            if (ImGui::Button("Order teapot"))
+            {
+                emplace_teapot_gently(teapot_factory_delivery_position);
+            }
         ImGui::End();
         ImGui::Begin("Rendering");
         if (ImGui::CollapsingHeader("Polygon Mode"))

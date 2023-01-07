@@ -33,7 +33,9 @@ public:
 	}
 	void update() override
 	{
+		//USING THE SUBCLASS METHOD IN ORDER TO PRESERVE STATE OF THE PHYSICS
 		Object::setPosition(glm::vec3(hitbox->getWorldTransform().getOrigin().x(), hitbox->getWorldTransform().getOrigin().y(), hitbox->getWorldTransform().getOrigin().z()));		
+		
 		const auto bt_quart = hitbox->getWorldTransform().getRotation();
 		
 		const auto bt_axis = bt_quart.getAxis();
