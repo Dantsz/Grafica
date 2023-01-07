@@ -9,8 +9,9 @@ public:
 		Object(model), 
 		hitbox_radius(hitbox_radius),
 		mass(mass)
-	{
-        sphere_shape = std::make_unique<btSphereShape>(btScalar(hitbox_radius));
+	{	
+
+        sphere_shape = std::make_unique<btCapsuleShape>(hitbox_radius , hitbox_radius * 1.5f);
       
         btTransform startTransform;
         startTransform.setIdentity();
@@ -42,7 +43,7 @@ public:
 		const auto bt_angle = bt_quart.getAngle();
 
 		//TODO: FIGURE OUT WHY DO I HAVE TO MULTIPLY WITH 180 FOR NORMAL BEHAVIOR????
-		rotate_fixed(bt_angle * 180.0f, glm::vec3(bt_axis.z() , bt_axis.y() , bt_axis.x() ));
+		rotate_fixed(glm::degrees(bt_angle) , glm::vec3(bt_axis.z() , bt_axis.y() , bt_axis.x() ));
 		
 	}
 	btRigidBody* getHitbox()

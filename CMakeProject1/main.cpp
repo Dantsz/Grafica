@@ -392,7 +392,7 @@ void cleanup() {
 
 void emplace_teapot_gently(glm::vec3 position)
 {
-    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.5f), 0.5f));
+    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.25f), 0.5f));
 
     GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
     dynamicsWorld->addRigidBody(teapot->getHitbox());
