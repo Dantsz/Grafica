@@ -86,6 +86,7 @@ float quadratic = 0.032f;
  btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
  btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
  glm::vec3 teapot_factory_delivery_position = glm::vec3(0, 5, 0);
+ glm::vec3 wind_direction = glm::vec3(1, 1, 1);
     //
 std::array<glm::vec3, 4> pointLightPositions = {
     glm::vec3(-112.0f,  11.41f,  -40.0f),
@@ -392,7 +393,7 @@ void cleanup() {
 
 void emplace_teapot_gently(glm::vec3 position)
 {
-    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.25f), 0.5f));
+    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.20f), 0.5f));
 
     GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
     dynamicsWorld->addRigidBody(teapot->getHitbox());
@@ -434,6 +435,7 @@ int main(int argc, const char * argv[]) {
     btRigidBody* ground_body = nullptr;
     btStaticPlaneShape* ground_shape = nullptr;
 
+
     btAlignedObjectArray<btCollisionShape*> collisionShapes;
     {
         // btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
@@ -457,6 +459,7 @@ int main(int argc, const char * argv[]) {
         //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
         ground_motion_state = new btDefaultMotionState(groundTransform);
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, ground_motion_state, ground_shape, localInertia);
+
         ground_body = new btRigidBody(rbInfo);
    
         ground_body->setRollingFriction(0.5);
@@ -498,7 +501,7 @@ int main(int argc, const char * argv[]) {
         const double currentTimeStamp = glfwGetTime();
         updateDelta(currentTimeStamp - lastTimeStamp);
         lastTimeStamp = currentTimeStamp;
-        std::cout << delta << '\n';
+        
      
         dynamicsWorld->stepSimulation(delta, 10);
         for (const auto& object : objects)
@@ -532,9 +535,24 @@ int main(int argc, const char * argv[]) {
         ImGui::Begin("Teapot Factory");
         
             ImGui::InputFloat3("Teapot delivery position", glm::value_ptr(teapot_factory_delivery_position));
+            ImGui::SameLine();
             if (ImGui::Button("Order teapot"))
             {
                 emplace_teapot_gently(teapot_factory_delivery_position);
+            }
+            ImGui::InputFloat3("Wind", glm::value_ptr(wind_direction));
+            ImGui::SameLine();
+            if (ImGui::Button("Divine Wind"))
+            {
+               
+                for (auto& object : objects)
+                {
+                    GravityObject* pot = dynamic_cast<GravityObject*>(object.get());
+                    if (pot)
+                    {
+                        pot->getHitbox()->applyCentralImpulse(btVector3(wind_direction.x, wind_direction.y, wind_direction.z));
+                    }
+                }
             }
         ImGui::End();
         ImGui::Begin("Rendering");
