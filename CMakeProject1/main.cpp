@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp> //glm extension for generating common transformation matrices
 #include <glm/gtc/matrix_inverse.hpp> //glm extension for computing inverse matrices
 #include <glm/gtc/type_ptr.hpp> //glm extension for accessing the internal data structure of glm types
+#include <btBulletDynamicsCommon.h>
+
 
 #include "Window.h"
 #include "Shader.hpp"
@@ -20,7 +22,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-
+import GravityObject;
 // window
 gps::Window myWindow;
 int retina_width, retina_height;
@@ -68,7 +70,7 @@ const unsigned int SHADOW_WIDTH = 4196;
 const unsigned int SHADOW_HEIGHT = 4196;
 
 
-std::vector<Object> objects{};
+std::vector<std::unique_ptr<Object>> objects{};
 //skybox
 std::vector<const GLchar*> faces;
 gps::SkyBox mySkyBox;
@@ -216,11 +218,11 @@ void processMovement() {
 	}
 
     if (pressedKeys[GLFW_KEY_Q]) {
-        objects[0].rotate(-1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+        objects[0]->rotate(-1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     if (pressedKeys[GLFW_KEY_E]) {
-        objects[0].rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+        objects[0]->rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     }
 }
 
@@ -279,9 +281,6 @@ void initOpenGLState() {
 
 void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
-   // debris_model->LoadModel("models/debris/debris.obj");
-   // ground_model->LoadModel("models/ground/ground.obj");
-   // dust2_model->LoadModel("models/cluck/untitled.obj");
     sponza_model->LoadModel("models/Sponza/sponza.obj");
 }
 
@@ -326,7 +325,7 @@ void renderScene() {
     depthMapShader.setVec3("lightPos", lightPos);
     for ( auto& object : objects)
     {
-        object.render(depthMapShader, view, true);
+        object->render(depthMapShader, view, true);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -375,7 +374,7 @@ void renderScene() {
     
     for ( auto& object : objects)
     {
-        object.render(myBasicShader, view);
+        object->render(myBasicShader, view);
     }
 
 }
@@ -410,13 +409,116 @@ int main(int argc, const char * argv[]) {
 	// application loop
     glm::vec3 ps = { 0.0f,1.0f,0.0f };
 
+    
+    objects.emplace_back(std::make_unique<GravityObject>(teapot_model));
+    objects.emplace_back(std::make_unique<Object>(teapot_model));
+    objects.emplace_back(std::make_unique<Object>(sponza_model));
 
-    objects.emplace_back(teapot_model);
-    objects.emplace_back(teapot_model);
-    objects.emplace_back(sponza_model);
-    objects[objects.size() - 1].set_scale({ 0.1f,0.1f,0.1f });
+    objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
+
+
+    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+    btBroadphaseInterface* overlappingPairCache = new btDbvtBroadphase();
+    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+    btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,
+        overlappingPairCache, solver, collisionConfiguration);
+
+   
+
+    
+    dynamicsWorld -> setGravity(btVector3(0, -10, 0));
+    btAlignedObjectArray<btCollisionShape*> collisionShapes;
+    {
+       // btCollisionShape* groundShape = new btBoxShape(btVector3(btScalar(50.), btScalar(50.), btScalar(50.)));
+        btVector3 planeNormal = btVector3(0.0f, 1.0f, 0.0f);
+        btStaticPlaneShape* groundShape = new btStaticPlaneShape(planeNormal, 0);
+        collisionShapes.push_back(groundShape);
+
+        btTransform groundTransform;
+        groundTransform.setIdentity();
+        groundTransform.setOrigin(btVector3(0, 0, 0));
+
+        btScalar mass(0.);
+
+        //rigidbody is dynamic if and only if mass is non zero, otherwise static
+        bool isDynamic = (mass != 0.f);
+
+        btVector3 localInertia(0, 0, 0);
+        if (isDynamic)
+            groundShape->calculateLocalInertia(mass, localInertia);
+
+        //using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
+        btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, groundShape, localInertia);
+        btRigidBody* body = new btRigidBody(rbInfo);
+
+        //add the body to the dynamics world
+        dynamicsWorld->addRigidBody(body);
+    }
+    btRigidBody* teapot_body = nullptr;
+    {
+        //create a dynamic rigidbody
+
+        //btCollisionShape* colShape = new btBoxShape(btVector3(1,1,1));
+        btCollisionShape* colShape = new btSphereShape(btScalar(.25));
+        collisionShapes.push_back(colShape);
+
+        /// Create Dynamic Objects
+        btTransform startTransform;
+        startTransform.setIdentity();
+
+        btScalar mass(1.f);
+
+        //rigidbody is dynamic if and only if mass is non zero, otherwise static
+        bool isDynamic = (mass != 0.f);
+
+        btVector3 localInertia(0, 0, 0);
+        if (isDynamic)
+            colShape->calculateLocalInertia(mass, localInertia);
+
+        startTransform.setOrigin(btVector3(2, 10, 0));
+
+        //using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+        btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
+        teapot_body = new btRigidBody(rbInfo);
+
+        dynamicsWorld->addRigidBody(teapot_body);
+    }
+    for (auto i = 0; i < 100; i++)
+         {
+        
+        
+             // print positions of all objects
+             for (int j = dynamicsWorld -> getNumCollisionObjects() - 1; j >= 0; j--)
+             {
+                 btCollisionObject * obj = dynamicsWorld -> getCollisionObjectArray()[j];
+                 btRigidBody * body = btRigidBody::upcast(obj);
+                 btTransform trans;
+                 if (body && body -> getMotionState())
+                     {
+                     body->getMotionState()->getWorldTransform(trans);
+                
+                     }
+                 else
+                     {
+                     trans = obj -> getWorldTransform();
+                     }
+                 printf(" world pos object %d = %f ,%f ,%f\n", j, float(trans.getOrigin().getX()), float(
+                    trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
+                 }
+         }
 
 	while (!glfwWindowShouldClose(myWindow.getWindow())) {
+        dynamicsWorld->stepSimulation(1.f / 60.f, 10);
+        btTransform trans;
+        teapot_body->getMotionState()->getWorldTransform(trans);
+        printf(" world pos object  = %f ,%f ,%f\n", float(trans.getOrigin().getX()), float(
+            trans.getOrigin().getY()), float(trans.getOrigin().getZ()));
+
+        objects[0]->setPosition(glm::vec3(float(trans.getOrigin().getX()), float(
+            trans.getOrigin().getY()), float(trans.getOrigin().getZ())));
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -499,7 +601,6 @@ int main(int argc, const char * argv[]) {
         processMovement();
       
    
-        objects[0].setPosition(ps);
 
   
 	    renderScene();
@@ -514,6 +615,11 @@ int main(int argc, const char * argv[]) {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 	cleanup();
+    delete dynamicsWorld;
+    delete solver;
+    delete overlappingPairCache;
+    delete dispatcher;
+    delete collisionConfiguration;
 
     return EXIT_SUCCESS;
 }
