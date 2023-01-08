@@ -491,7 +491,7 @@ int main(int argc, const char * argv[]) {
 
   
 
-    objects.emplace_back(std::make_unique<Object>(teapot_model));
+  
     objects.emplace_back(std::make_unique<Object>(sponza_model));
 
     objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
@@ -549,7 +549,7 @@ int main(int argc, const char * argv[]) {
                 {
                     GravityObject* pot = dynamic_cast<GravityObject*>(object.get());
                     if (pot)
-                    {
+                    {                    
                         pot->getHitbox()->applyCentralImpulse(btVector3(wind_direction.x, wind_direction.y, wind_direction.z));
                     }
                 }
