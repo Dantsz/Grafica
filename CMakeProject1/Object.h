@@ -16,12 +16,13 @@ public:
 	{
 
 	}
-	void render(gps::Shader& shader, const glm::mat4& view,bool depth_pass = false) ;
+	void render(gps::Shader& shader, const glm::mat4&  view,bool depth_pass = false) ;
 	
 	virtual void setPosition(const glm::vec3& pos)
 	{
 		model_mat = glm::translate(glm::mat4(1.0f), pos);
 		model_mat = glm::rotate(model_mat, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+		model_mat = glm::scale(model_mat, scale);
 
 	}
 
@@ -39,9 +40,9 @@ public:
 	{
 
 	}
-	virtual void set_scale(glm::vec3 new_scale)
+	virtual void set_scale(const glm::vec3& new_scale)
 	{
-		//TODO:
+		scale = new_scale;
 		model_mat = glm::scale(model_mat,new_scale) ;
 	}
 
@@ -49,6 +50,6 @@ public:
 	glm::mat4 model_mat;
 	glm::mat3 normal_matrix;
 	std::shared_ptr<gps::Model3D> model;
-	float scale = 1.0f;
+	glm::vec3 scale = glm::vec3(1.0f);
 
 };

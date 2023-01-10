@@ -65,11 +65,13 @@ public:
 		motion_state->setWorldTransform(world);
 		hitbox->setMotionState(motion_state.get());
 		hitbox->setWorldTransform(world);
+		model_mat = glm::scale(model_mat, scale);
 	}
-	void set_scale(glm::vec3 new_scale)
+	void set_scale(const glm::vec3& new_scale) override
 	{
 		//TODO:
-		model_mat = glm::scale(model_mat, new_scale);
+		Object::set_scale(new_scale);
+		sphere_shape->setLocalScaling(btVector3(new_scale.x, new_scale.y, new_scale.z));
 	}
 	bool isDynamic()
 	{

@@ -31,8 +31,7 @@ glm::mat4 view;
 glm::mat4 projection;
 
 
-// light parameters
-glm::vec3 lightDir = {0.0f, 1.0f, 1.0f};
+
 
 glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 
@@ -41,7 +40,7 @@ glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 
 // camera
 gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-constexpr float render_distance = 2000.0f;
+constexpr float render_distance = 300;
 GLfloat cameraSpeed = 0.1f;
 
 GLboolean pressedKeys[1024];
@@ -59,15 +58,15 @@ gps::Shader myBasicShader;
 gps::Shader depthMapShader;
 //teapot object
 bool cursor = true;
-float lightAngle = 0.0f;
+
 
 glm::mat4 lightMatrixTR;
 glm::mat3 normalMatrix;
 //generate FBO ID
 
 
-const unsigned int SHADOW_WIDTH = 4196;
-const unsigned int SHADOW_HEIGHT = 4196;
+const unsigned int SHADOW_WIDTH = 2048;
+const unsigned int SHADOW_HEIGHT = 2048;
 
 
 std::vector<std::unique_ptr<Object>> objects{};
@@ -86,6 +85,8 @@ float quadratic = 0.032f;
  btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
  btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
  glm::vec3 teapot_factory_delivery_position = glm::vec3(0, 5, 0);
+ float teapot_mass = 1.f;
+ float teapot_scale = 1.f;
  glm::vec3 wind_direction = glm::vec3(1, 1, 1);
     //
 std::array<glm::vec3, 4> pointLightPositions = {
@@ -141,7 +142,7 @@ GLenum glCheckError_(const char *file, int line)
 
 glm::vec3 lightPos(0.0f, 1.0f, 0.0f);
 float near_plane = 1.0f;
-float far_plane = 1000.0f;
+float far_plane = 400.0f;
 glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near_plane, far_plane);
 std::vector<glm::mat4> shadowTransforms;
 
@@ -225,13 +226,7 @@ void processMovement() {
 		myCamera.move(gps::MOVE_RIGHT, cameraSpeed);
 	}
 
-    if (pressedKeys[GLFW_KEY_Q]) {
-        objects[0]->rotate(-1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    }
-
-    if (pressedKeys[GLFW_KEY_E]) {
-        objects[0]->rotate(1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-    }
+  
 }
 
 void initOpenGLWindow() {
@@ -354,10 +349,6 @@ void renderScene() {
     view = myCamera.getViewMatrix();
     myBasicShader.setMat4("view", view);
 
-    const auto lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-    static glm::vec3 lightVec{};
-    lightVec = glm::inverseTranspose(glm::mat3(lightRotation)) * lightDir;
-    myBasicShader.setVec3("lightDir", lightVec);
     //bind the shadow map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
@@ -391,9 +382,9 @@ void cleanup() {
     myWindow.Delete();
 }
 
-void emplace_teapot_gently(glm::vec3 position)
+void emplace_teapot_gently(glm::vec3 position, float teapot_mass, float scale)
 {
-    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.20f), 0.5f));
+    objects.emplace_back(std::make_unique<GravityObject>(teapot_model, btScalar(.20f), teapot_mass));
 
     GravityObject* teapot = dynamic_cast<GravityObject*>(objects[objects.size() - 1].get());
     dynamicsWorld->addRigidBody(teapot->getHitbox());
@@ -411,6 +402,8 @@ void emplace_teapot_gently(glm::vec3 position)
     teapot->getHitbox()->setSpinningFriction(1.1);
     teapot->getHitbox()->setAnisotropicFriction(teapot->getShape()->getAnisotropicRollingFrictionDirection(), btCollisionObject::CF_ANISOTROPIC_ROLLING_FRICTION);
     teapot->setPosition(position);
+    glm::vec3 scl = glm::vec3(scale, scale, scale);
+    teapot->set_scale(scl);
 }
 
 float delta = 0;
@@ -482,16 +475,13 @@ int main(int argc, const char * argv[]) {
     glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
 	glCheckError();
 	// application loop
-    glm::vec3 ps = { 0.0f,1.0f,0.0f };
+    
 
     for (float i = 0; i < 10; i++)
     {
-        emplace_teapot_gently(glm::vec3(2.0f + i / 10.0f, i + 10.0f, +i / 100.0f));
+        emplace_teapot_gently(glm::vec3(2.0f + i / 10.0f, i + 10.0f, +i / 100.0f),0.5f,1.0f);
     }
 
-  
-
-  
     objects.emplace_back(std::make_unique<Object>(sponza_model));
 
     objects[objects.size() - 1]->set_scale({ 0.1f,0.1f,0.1f });
@@ -521,24 +511,18 @@ int main(int argc, const char * argv[]) {
             ImGui::Separator();
         ImGui::End();
         ImGui::Begin("Global light");
-            ImGui::DragFloat3("Direction", glm::value_ptr(lightDir),0.1,-1.0,1.0);
-            ImGui::InputFloat("Angle", &lightAngle, 1.f);
             ImGui::InputFloat3("LightPos", glm::value_ptr(lightPos));
             ImGui::InputFloat("Near plane", &near_plane, 0.1f, 1.0f);
             ImGui::InputFloat("Far Plane", &far_plane, 0.1f, 1.0f);
         ImGui::End();
-        ImGui::Begin("Teapot position");
-            ImGui::InputFloat("x:",&ps.x,0.1f,1.0f);
-            ImGui::InputFloat("y:", &ps.y, 0.1f, 1.0f);
-            ImGui::InputFloat("z:", &ps.z, 0.1f, 1.0f);
-        ImGui::End();
         ImGui::Begin("Teapot Factory");
         
             ImGui::InputFloat3("Teapot delivery position", glm::value_ptr(teapot_factory_delivery_position));
-            ImGui::SameLine();
+            ImGui::InputFloat("Mass", &teapot_mass, 0.1f, 1.0f);
+            ImGui::InputFloat("Scale", &teapot_scale, 0.1f, 1.0f);
             if (ImGui::Button("Order teapot"))
             {
-                emplace_teapot_gently(teapot_factory_delivery_position);
+                emplace_teapot_gently(teapot_factory_delivery_position,teapot_mass, teapot_scale);
             }
             ImGui::InputFloat3("Wind", glm::value_ptr(wind_direction));
             ImGui::SameLine();
@@ -549,7 +533,8 @@ int main(int argc, const char * argv[]) {
                 {
                     GravityObject* pot = dynamic_cast<GravityObject*>(object.get());
                     if (pot)
-                    {                    
+                    {             
+                        pot->getHitbox()->activate(true);
                         pot->getHitbox()->applyCentralImpulse(btVector3(wind_direction.x, wind_direction.y, wind_direction.z));
                     }
                 }
