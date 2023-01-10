@@ -23,7 +23,6 @@ public:
 		model_mat = glm::translate(glm::mat4(1.0f), pos);
 		model_mat = glm::rotate(model_mat, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model_mat = glm::scale(model_mat, scale);
-
 	}
 
 	void rotate(GLfloat added_angle, glm::vec3 axis)
@@ -48,7 +47,7 @@ public:
 
 	GLfloat angle;
 	glm::mat4 model_mat;
-	glm::mat3 normal_matrix;
+	glm::mat3 normal_matrix{};
 	std::shared_ptr<gps::Model3D> model;
 	glm::vec3 scale = glm::vec3(1.0f);
 
