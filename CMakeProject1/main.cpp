@@ -36,6 +36,7 @@ glm::mat4 projection;
 glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 
 
+
 // camera
 gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 constexpr float render_distance = 300;
@@ -103,6 +104,49 @@ std::array<glm::vec3,4> pointLightColor = {
 //for point shadows
 unsigned int depthCubemap;
 unsigned int depthMapFBO;
+//for Bloom
+unsigned int hdrFBO;
+unsigned int colorBuffers[2];
+unsigned int pingpongFBO[2];
+unsigned int pingpongBuffer[2];
+gps::Shader shaderBlur;
+
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+
+bool bloom = true;
+bool gamma_corretion = false;
+float exposure = 1.0f;
+
+gps::Shader bloomMerge;
+
+
+void renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
 
 GLenum glCheckError_(const char *file, int line)
 {
@@ -179,6 +223,70 @@ void initFBO() {
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     shadowTransforms.resize(6);
+    
+    //FBO FOR BLOOM
+    glCheckError();
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
+    glViewport(0, 0, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height);
+    
+    glGenTextures(2, colorBuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA16F, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height, 0, GL_RGBA, GL_FLOAT, NULL
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach texture to framebuffer
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0
+        );
+        unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
+        glDrawBuffers(2, attachments);
+       
+    }
+    unsigned int depthBuffer;
+    glGenTextures(1, &depthBuffer);
+    glBindTexture(GL_TEXTURE_2D, depthBuffer);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthBuffer, 0
+    );
+
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongBuffer);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+      
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glCheckError();
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA16F, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height, 0, GL_RGBA, GL_FLOAT, NULL
+        );
+        glCheckError();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glCheckError();
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0
+        );
+    }
+    glCheckError();
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -270,15 +378,16 @@ void setWindowCallbacks() {
 }
 
 void initOpenGLState() {
-	glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
-	glViewport(0, 0, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height);
-    glEnable(GL_FRAMEBUFFER_SRGB);
-	glEnable(GL_DEPTH_TEST); // enable depth-testing
-	glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-	glEnable(GL_CULL_FACE); // cull face
-	glCullFace(GL_BACK); // cull back face
-	glFrontFace(GL_CCW); // GL_CCW for counter clock-wise   
+    glClearColor(0.7f, 0.7f, 0.7f, 1.0f);
+    glViewport(0, 0, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
+    glEnable(GL_DEPTH_TEST); // enable depth-testing
+    glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
+    glEnable(GL_CULL_FACE); // cull face
+    glCullFace(GL_BACK); // cull back face
+    glFrontFace(GL_CCW); // GL_CCW for counter clock-wise   
 }
+
 
 void initModels() {
     teapot_model->LoadModel("models/teapot/teapot20segUT.obj");
@@ -286,10 +395,10 @@ void initModels() {
 }
 
 void initShaders() {
-	myBasicShader.loadShader(
-        "shaders/basic.vert",
-        "shaders/basic.frag");
+	myBasicShader.loadShader("shaders/basic.vert","shaders/basic.frag");
     depthMapShader.loadShader ("shaders/shadow.vert", "shaders/shadow.frag","shaders/shadow.geo");
+    shaderBlur.loadShader("shaders/gaussian.vert", "shaders/gaussian.frag");
+    bloomMerge.loadShader("shaders/finalbloom.vert","shaders/finalbloom.frag");
 }
 
 void initUniforms() {
@@ -334,7 +443,7 @@ void renderScene() {
     //SKYBOX
     glViewport(0, 0, retina_width, retina_height);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
 
     skyboxShader.useShaderProgram();
     view = myCamera.getViewMatrix();
@@ -342,8 +451,9 @@ void renderScene() {
     mySkyBox.Draw(skyboxShader, view, projection);
 
     //NORMAL
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
     myBasicShader.useShaderProgram();
-
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     view = myCamera.getViewMatrix();
     myBasicShader.setMat4("view", view);
 
@@ -374,6 +484,32 @@ void renderScene() {
         object->render(myBasicShader, view);
     }
 
+    bool horizontal = true, first_iteration = true;
+    int amount = 10;
+    shaderBlur.useShaderProgram();
+    for (unsigned int i = 0; i < amount; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+        shaderBlur.setInt("horizontal", horizontal);
+        glBindTexture(
+            GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongBuffer[!horizontal]
+        );
+        renderQuad();
+        horizontal = !horizontal;
+        if (first_iteration)
+            first_iteration = false;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    bloomMerge.useShaderProgram();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+    bloomMerge.setInt("bloom", bloom);
+    bloomMerge.setInt("gamma", gamma_corretion);
+    bloomMerge.setFloat("exposure", exposure);
+    renderQuad();
 }
 
 void cleanup() {
@@ -467,9 +603,13 @@ int main(int argc, const char * argv[]) {
 
 	initModels();
 	initShaders();
+    glCheckError();
 	initUniforms();
+    glCheckError();
     initFBO();
+    glCheckError();
     initSkybox();
+    glCheckError();
     glfwGetFramebufferSize(myWindow.getWindow(), &retina_width, &retina_height);
 	glCheckError();
 	// application loop
@@ -547,6 +687,15 @@ int main(int argc, const char * argv[]) {
             if (ImGui::Button("Normal")) {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
+
+            if (ImGui::Button("Bloom"))
+            {
+                bloom = !bloom;
+            }
+            if (ImGui::Button("Gamma Corection"))
+            {
+                gamma_corretion = !gamma_corretion;
+            }
         } 
         if (ImGui::CollapsingHeader("Blending"))
         {
@@ -601,6 +750,7 @@ int main(int argc, const char * argv[]) {
   
 	    renderScene();
         glCheckError();
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glCheckError();

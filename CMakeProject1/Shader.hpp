@@ -47,6 +47,11 @@ public:
     {
         glUniform1f(glGetUniformLocation(shaderProgram, name.c_str()), flt);
     }
+    void setInt(const std::string& name, const int& it)
+    {
+        glUniform1i(glGetUniformLocation(shaderProgram, name.c_str()), it);
+    }
+
    
 private:
     std::string readShaderFile(std::string fileName);
