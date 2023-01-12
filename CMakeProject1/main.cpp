@@ -115,11 +115,12 @@ unsigned int quadVAO = 0;
 unsigned int quadVBO;
 
 bool bloom = true;
-bool gamma_corretion = false;
+bool gamma_corretion = true;
 float exposure = 1.0f;
 
 gps::Shader bloomMerge;
-
+//animation
+bool toogleteapotAnimation = true;
 
 void renderQuad()
 {
@@ -271,22 +272,22 @@ void initFBO() {
     {
       
         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
-        glCheckError();
+        
         glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
         glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA16F, myWindow.getWindowDimensions().width, myWindow.getWindowDimensions().height, 0, GL_RGBA, GL_FLOAT, NULL
         );
-        glCheckError();
+    
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glCheckError();
+    
         glFramebufferTexture2D(
             GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0
         );
     }
-    glCheckError();
+     
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -438,8 +439,8 @@ void renderScene() {
         object->render(depthMapShader, view, true);
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //SKYBOX
     glViewport(0, 0, retina_width, retina_height);
 
@@ -451,9 +452,9 @@ void renderScene() {
     mySkyBox.Draw(skyboxShader, view, projection);
 
     //NORMAL
-    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    
     myBasicShader.useShaderProgram();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   
     view = myCamera.getViewMatrix();
     myBasicShader.setMat4("view", view);
 
@@ -477,7 +478,7 @@ void renderScene() {
         myBasicShader.setFloat("pointLights[" + std::to_string(i) + "].linear", linear);
         myBasicShader.setFloat("pointLights[" + std::to_string(i) + "].quadratic", quadratic);
     }
-     
+   
     
     for ( auto& object : objects)
     {
@@ -640,6 +641,17 @@ int main(int argc, const char * argv[]) {
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
+        if (toogleteapotAnimation)
+        {
+            GravityObject* pot = dynamic_cast<GravityObject*>(objects[9].get());
+            if (pot)
+            {
+                const auto poss =  pot->getHitbox()->getWorldTransform().getOrigin();
+                myCamera.cameraPosition = { poss.x() , poss.y() + 1.0f, poss.z() };
+                myCamera.update();
+            }
+            
+        }
         ImGui::NewFrame();
         ImGui::Begin("Stats");
             ImGui::InputFloat3("Position",   glm::value_ptr(myCamera.cameraPosition));
@@ -695,6 +707,10 @@ int main(int argc, const char * argv[]) {
             if (ImGui::Button("Gamma Corection"))
             {
                 gamma_corretion = !gamma_corretion;
+            }
+            if (ImGui::Button("10th Teapot view"))
+            {
+                toogleteapotAnimation = !toogleteapotAnimation;
             }
         } 
         if (ImGui::CollapsingHeader("Blending"))

@@ -44,7 +44,7 @@ public:
 		scale = new_scale;
 		model_mat = glm::scale(model_mat,new_scale) ;
 	}
-
+	
 	GLfloat angle;
 	glm::mat4 model_mat;
 	glm::mat3 normal_matrix{};
