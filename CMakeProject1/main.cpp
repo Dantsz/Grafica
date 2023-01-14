@@ -121,7 +121,7 @@ float exposure = 1.0f;
 gps::Shader bloomMerge;
 //animation
 bool toogleteapotAnimation = true;
-
+bool wireframe = false;
 void renderQuad()
 {
     if (quadVAO == 0)
@@ -454,7 +454,10 @@ void renderScene() {
     //NORMAL
     
     myBasicShader.useShaderProgram();
-   
+    if (wireframe)
+    {
+         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
     view = myCamera.getViewMatrix();
     myBasicShader.setMat4("view", view);
 
@@ -500,6 +503,7 @@ void renderScene() {
         if (first_iteration)
             first_iteration = false;
     }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     bloomMerge.useShaderProgram();
@@ -511,6 +515,7 @@ void renderScene() {
     bloomMerge.setInt("gamma", gamma_corretion);
     bloomMerge.setFloat("exposure", exposure);
     renderQuad();
+
 }
 
 void cleanup() {
@@ -549,6 +554,7 @@ void updateDelta(double elapsedSeconds) {
 double lastTimeStamp = glfwGetTime();
 
 int main(int argc, const char * argv[]) {
+ 
 
     try {
         initOpenGLWindow();
@@ -694,25 +700,26 @@ int main(int argc, const char * argv[]) {
         if (ImGui::CollapsingHeader("Polygon Mode"))
         {
             if (ImGui::Button("WireFrame")) {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                wireframe = true;
+                
             }
             if (ImGui::Button("Normal")) {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                wireframe = false;
             }
-
-            if (ImGui::Button("Bloom"))
-            {
-                bloom = !bloom;
-            }
-            if (ImGui::Button("Gamma Corection"))
-            {
-                gamma_corretion = !gamma_corretion;
-            }
-            if (ImGui::Button("10th Teapot view"))
-            {
-                toogleteapotAnimation = !toogleteapotAnimation;
-            }
-        } 
+        }
+        if (ImGui::Button("Bloom"))
+        {
+            bloom = !bloom;
+        }
+        if (ImGui::Button("Gamma Corection"))
+        {
+            gamma_corretion = !gamma_corretion;
+        }
+        if (ImGui::Button("10th Teapot view"))
+        {
+            toogleteapotAnimation = !toogleteapotAnimation;
+        }
+        
         if (ImGui::CollapsingHeader("Blending"))
         {
             if (ImGui::Button("Enable"))
