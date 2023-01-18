@@ -40,7 +40,7 @@ glm::vec3 lightColor = glm::vec3(1.0f, 1.0f,1.0f); //white light
 // camera
 gps::Camera myCamera(glm::vec3(0.0f, 5.0f, 15.0f), glm::vec3(0.0f, 2.0f, -10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 constexpr float render_distance = 300;
-GLfloat cameraSpeed = 0.1f;
+GLfloat cameraSpeed = 1.f;
 
 GLboolean pressedKeys[1024];
 

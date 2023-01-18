@@ -1,8 +1,8 @@
-# Install script for directory: G:/Dev/Grafica/CMakeProject1
+# Install script for directory: D:/Dev/Fac/Grafica/CMakeProject1
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "G:/Dev/Grafica/out/install/x64-Debug")
+  set(CMAKE_INSTALL_PREFIX "D:/Dev/Fac/Grafica/out/install/x64-Debug")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
