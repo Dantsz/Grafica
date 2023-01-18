@@ -121,7 +121,9 @@ float exposure = 1.0f;
 gps::Shader bloomMerge;
 //animation
 bool toogleteapotAnimation = true;
-bool wireframe = false;
+int displayMode = 0;
+//
+float totalElapsed = 0.0f;
 void renderQuad()
 {
     if (quadVAO == 0)
@@ -449,14 +451,19 @@ void renderScene() {
     skyboxShader.useShaderProgram();
     view = myCamera.getViewMatrix();
     projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
+    skyboxShader.setFloat("iTime", totalElapsed);
     mySkyBox.Draw(skyboxShader, view, projection);
 
     //NORMAL
     
     myBasicShader.useShaderProgram();
-    if (wireframe)
+    if (displayMode == 1)
     {
          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    else if (displayMode == 2)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
     }
     view = myCamera.getViewMatrix();
     myBasicShader.setMat4("view", view);
@@ -636,7 +643,7 @@ int main(int argc, const char * argv[]) {
         const double currentTimeStamp = glfwGetTime();
         updateDelta(currentTimeStamp - lastTimeStamp);
         lastTimeStamp = currentTimeStamp;
-        
+        totalElapsed += lastTimeStamp;
      
         dynamicsWorld->stepSimulation(delta, 10);
         for (const auto& object : objects)
@@ -699,12 +706,16 @@ int main(int argc, const char * argv[]) {
         ImGui::Begin("Rendering");
         if (ImGui::CollapsingHeader("Polygon Mode"))
         {
+            if (ImGui::Button("Point"))
+            {
+                displayMode = 2;
+            }
             if (ImGui::Button("WireFrame")) {
-                wireframe = true;
+                displayMode = 1;
                 
             }
             if (ImGui::Button("Normal")) {
-                wireframe = false;
+                displayMode = 0;
             }
         }
         if (ImGui::Button("Bloom"))
@@ -763,6 +774,7 @@ int main(int argc, const char * argv[]) {
             myBasicShader.loadShader(
                 "shaders/basic.vert",
                 "shaders/basic.frag");
+            skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
             initUniforms();
         }
         ImGui::End();
