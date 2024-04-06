@@ -1,4 +1,6 @@
 #include "Camera.hpp"
+
+#define GLM_ENABLE_EXPERIMENTAL 
 #include <glm/gtx/euler_angles.hpp>
 #include <iostream>
 namespace gps {
@@ -8,7 +10,7 @@ namespace gps {
         cameraPosition(cameraPosition),
         cameraUpDirection(cameraUp),
         cameraFrontDirection(glm::normalize(cameraTarget - cameraPosition)),
-        cameraRightDirection(glm::rotate(glm::radians(360.0f - 90.0f), glm::vec3(0.0f, 1.0f, 0.0f))* glm::vec4(glm::normalize(cameraTarget - cameraPosition), 0.0f)),
+        cameraRightDirection(glm::rotate(glm::mat4(1.0f), glm::radians(360.0f - 90.0f), glm::vec3(0.0f, 1.0f, 0.0f))* glm::vec4(glm::normalize(cameraTarget - cameraPosition), 0.0f)),
         worldUpDirection(cameraUp)
 
     {
