@@ -249,11 +249,10 @@ void initFBO() {
         glFramebufferTexture2D(
             GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0
         );
-        unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-
-        glDrawBuffers(2, attachments);
-       
     }
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+
     unsigned int depthBuffer;
     glGenTextures(1, &depthBuffer);
     glBindTexture(GL_TEXTURE_2D, depthBuffer);

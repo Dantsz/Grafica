@@ -76,8 +76,9 @@ float ShadowCalculation(vec3 fragPos)
 }  
 vec3 computeGlobalLight(vec3 fragPos,vec3 normalEye ,vec3 viewDir)
 {
-
-	vec3 color = texture(diffuseTexture, fTexCoords).rgb;
+	float gamma = 2.2;
+	vec3 diffuseColor = texture(diffuseTexture, fTexCoords).rgb; 
+	vec3 color = pow(diffuseColor, vec3(gamma));
     vec3 normal = normalEye;
     vec3 lightColor = vec3(1);
     // ambient
